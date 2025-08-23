@@ -1,0 +1,216 @@
+.map-container {
+  background: linear-gradient(135deg, #0c0e19 0%, #1a1d2e 100%);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid #2d3748;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.map-header h3 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.ship-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.ship-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.status-indicator {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-indicator.in_transit {
+  background-color: #f56565;
+  color: white;
+}
+
+.status-indicator.in_orbit {
+  background-color: #48bb78;
+  color: white;
+}
+
+.status-indicator.docked {
+  background-color: #4299e1;
+  color: white;
+}
+
+.ship-location {
+  color: #a0aec0;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.orbit-btn, .dock-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.orbit-btn {
+  background-color: #38a169;
+  color: white;
+}
+
+.orbit-btn:hover:not(:disabled) {
+  background-color: #2f855a;
+}
+
+.dock-btn {
+  background-color: #3182ce;
+  color: white;
+}
+
+.dock-btn:hover:not(:disabled) {
+  background-color: #2c5282;
+}
+
+.orbit-btn:disabled, .dock-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.map-view {
+  background: #000;
+  border-radius: 8px;
+  border: 2px solid #2d3748;
+  margin-bottom: 20px;
+  overflow: hidden;
+  position: relative;
+  min-height: 400px;
+}
+
+.system-map {
+  width: 100%;
+  height: 400px;
+  background: radial-gradient(circle at center, #0f0f23 0%, #000000 100%);
+}
+
+.waypoint {
+  transition: all 0.2s ease;
+}
+
+.waypoint.clickable:hover {
+  stroke-width: 2;
+  filter: brightness(1.2);
+  cursor: pointer;
+}
+
+.waypoint-label {
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+}
+
+.map-legend {
+  background: rgba(45, 55, 72, 0.8);
+  border-radius: 6px;
+  padding: 15px;
+  border: 1px solid #4a5568;
+}
+
+.map-legend h4 {
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #fff;
+}
+
+.legend-note {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #4a5568;
+}
+
+.map-placeholder, .map-loading, .map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #a0aec0;
+  font-size: 1.1rem;
+}
+
+.map-error {
+  color: #f56565;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-container {
+    padding: 15px;
+  }
+  
+  .map-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ship-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .system-map {
+    height: 300px;
+  }
+  
+  .legend-items {
+    justify-content: center;
+  }
+}
