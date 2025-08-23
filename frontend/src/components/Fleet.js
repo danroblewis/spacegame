@@ -95,7 +95,6 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
 
   return (
     <div className="fleet">
-<<<<<<< HEAD
       <div className="card">
         <h1>Fleet Management</h1>
         <p>Total Ships: {ships.length}</p>
