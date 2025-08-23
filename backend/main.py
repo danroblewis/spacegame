@@ -76,6 +76,14 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+class RefuelRequest(BaseModel):
+    units: Optional[int] = None  # If not specified, refuel to max capacity
+
+class TransferCargoRequest(BaseModel):
+    tradeSymbol: str
+    units: int
+    shipSymbol: str  # Target ship to transfer to
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -438,6 +446,211 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
     try:
         headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
         response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/orbit", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/refuel")
+async def refuel_ship(ship_symbol: str, request: RefuelRequest = RefuelRequest(), client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Refuel ship at current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock refuel response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        if mock_ship["nav"]["status"] != "DOCKED":
+            raise HTTPException(status_code=400, detail="Ship must be docked to refuel")
+        
+        # Mock fuel update
+        fuel_cost = 50 if request.units is None else request.units
+        fuel_units = 100 if request.units is None else min(request.units, 100)
+        
+        return {
+            "data": {
+                "agent": {"credits": 999950},
+                "fuel": {"current": fuel_units, "capacity": 100, "consumed": {"amount": 0, "timestamp": "2023-11-01T00:00:00.000Z"}},
+                "transaction": {"waypointSymbol": mock_ship["nav"]["waypointSymbol"], "shipSymbol": ship_symbol, "tradeSymbol": "FUEL", "type": "PURCHASE", "units": fuel_units, "pricePerUnit": 1, "totalPrice": fuel_cost, "timestamp": "2023-11-01T00:00:00.000Z"}
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {}
+        if request.units is not None:
+            payload["units"] = request.units
+            
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/refuel", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/repair")
+async def get_repair_cost(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get repair cost for ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock repair cost response
+        return {
+            "data": {
+                "transaction": {
+                    "waypointSymbol": "X1-DF55-20250X",
+                    "shipSymbol": ship_symbol,
+                    "totalPrice": 100,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/repair", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/repair")
+async def repair_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Repair ship at current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock repair response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        if mock_ship["nav"]["status"] != "DOCKED":
+            raise HTTPException(status_code=400, detail="Ship must be docked at a shipyard to repair")
+        
+        return {
+            "data": {
+                "agent": {"credits": 999900},
+                "ship": mock_ship,
+                "transaction": {
+                    "waypointSymbol": mock_ship["nav"]["waypointSymbol"],
+                    "shipSymbol": ship_symbol,
+                    "totalPrice": 100,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/repair", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/scrap")
+async def get_scrap_value(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get scrap value for ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock scrap value response
+        return {
+            "data": {
+                "transaction": {
+                    "waypointSymbol": "X1-DF55-20250X",
+                    "shipSymbol": ship_symbol,
+                    "totalPrice": 50000,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scrap", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/scrap")
+async def scrap_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Scrap ship at current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock scrap response - remove ship from mock list
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        if mock_ship["nav"]["status"] != "DOCKED":
+            raise HTTPException(status_code=400, detail="Ship must be docked at a shipyard to scrap")
+        
+        # Remove ship from mock list
+        MOCK_SHIPS[:] = [ship for ship in MOCK_SHIPS if ship["symbol"] != ship_symbol]
+        
+        return {
+            "data": {
+                "agent": {"credits": 1050000},
+                "transaction": {
+                    "waypointSymbol": mock_ship["nav"]["waypointSymbol"],
+                    "shipSymbol": ship_symbol,
+                    "totalPrice": 50000,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scrap", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/transfer")
+async def transfer_cargo(ship_symbol: str, request: TransferCargoRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Transfer cargo between ships"""
+    if not HAS_VALID_TOKEN:
+        # Mock transfer response
+        source_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        target_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == request.shipSymbol), None)
+        
+        if not source_ship:
+            raise HTTPException(status_code=404, detail="Source ship not found")
+        if not target_ship:
+            raise HTTPException(status_code=404, detail="Target ship not found")
+        
+        # Mock cargo transfer logic
+        return {
+            "data": {
+                "cargo": source_ship["cargo"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {
+            "tradeSymbol": request.tradeSymbol,
+            "units": request.units,
+            "shipSymbol": request.shipSymbol
+        }
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/transfer", 
+                                   json=payload, headers=headers)
         
         if response.status_code == 200:
             return response.json()
