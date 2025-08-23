@@ -114,6 +114,59 @@ const Map = ({ selectedShip, onShipUpdate }) => {
     }
   };
 
+  const handleJump = async (waypointSymbol) => {
+    if (!selectedShip || navigating || !waypointSymbol) return;
+
+    try {
+      setNavigating(true);
+      const response = await axios.post(`/api/ships/${selectedShip.symbol}/jump`, {
+        waypointSymbol: waypointSymbol
+      });
+
+      alert(`Jump successful! ${response.data.data.transaction ? 
+        `Antimatter cost: ${response.data.data.transaction.price} credits` : ''}`);
+      
+      if (onShipUpdate) {
+        const shipResponse = await axios.get('/api/ships');
+        const updatedShip = shipResponse.data.find(ship => ship.symbol === selectedShip.symbol);
+        onShipUpdate(updatedShip);
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Jump failed');
+    } finally {
+      setNavigating(false);
+    }
+  };
+
+  const handleWarp = async (waypointSymbol) => {
+    if (!selectedShip || navigating || !waypointSymbol) return;
+
+    try {
+      setNavigating(true);
+      const response = await axios.post(`/api/ships/${selectedShip.symbol}/warp`, {
+        waypointSymbol: waypointSymbol
+      });
+
+      alert(`Warp successful! Fuel consumed: ${response.data.data.fuel?.consumed?.amount || 'Unknown'}`);
+      
+      if (onShipUpdate) {
+        const shipResponse = await axios.get('/api/ships');
+        const updatedShip = shipResponse.data.find(ship => ship.symbol === selectedShip.symbol);
+        onShipUpdate(updatedShip);
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Warp failed');
+    } finally {
+      setNavigating(false);
+    }
+  };
+
+  const hasWarpDrive = () => {
+    return selectedShip?.modules?.some(module => 
+      module.symbol?.includes('WARP_DRIVE') || module.name?.includes('Warp Drive')
+    );
+  };
+
   // Zoom and pan handlers
   const handleWheel = useCallback((e) => {
     e.preventDefault();
@@ -259,13 +312,37 @@ const Map = ({ selectedShip, onShipUpdate }) => {
               </button>
             )}
             {selectedShip.nav.status === 'IN_ORBIT' && (
-              <button 
-                onClick={handleDock}
-                disabled={navigating}
-                className="dock-btn"
-              >
-                {navigating ? 'Processing...' : 'Dock'}
-              </button>
+              <>
+                <button 
+                  onClick={handleDock}
+                  disabled={navigating}
+                  className="dock-btn"
+                >
+                  {navigating ? 'Processing...' : 'Dock'}
+                </button>
+                <button 
+                  onClick={() => {
+                    const waypoint = prompt('Enter waypoint symbol for jump:');
+                    if (waypoint) handleJump(waypoint);
+                  }}
+                  disabled={navigating}
+                  className="jump-btn quick-nav"
+                  title="Quick Jump"
+                >
+                  🚀 Jump
+                </button>
+                <button 
+                  onClick={() => {
+                    const waypoint = prompt('Enter waypoint symbol for warp:');
+                    if (waypoint) handleWarp(waypoint);
+                  }}
+                  disabled={navigating || !hasWarpDrive()}
+                  className="warp-btn quick-nav"
+                  title="Quick Warp"
+                >
+                  ⚡ Warp
+                </button>
+              </>
             )}
           </div>
         </div>

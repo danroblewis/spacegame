@@ -3,6 +3,7 @@ import axios from 'axios';
 import Map from './Map';
 import ShipModifications from './ShipModifications';
 import ShipActionsSidebar from './ShipActionsSidebar';
+import NavigationPanel from './NavigationPanel';
 
 const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
   const [ships, setShips] = useState([]);
@@ -120,6 +121,9 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
 
       {/* Map Component */}
       <Map selectedShip={selectedShip} onShipUpdate={handleShipUpdate} />
+
+      {/* Advanced Navigation Panel */}
+      <NavigationPanel selectedShip={selectedShip} onShipUpdate={handleShipUpdate} />
 
       {ships.length === 0 ? (
         <div className="card">

@@ -180,6 +180,16 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+class JumpRequest(BaseModel):
+    waypointSymbol: str
+
+class WarpRequest(BaseModel):
+    waypointSymbol: str
+
+class RouteRequest(BaseModel):
+    waypoints: List[str]
+    optimize_fuel: bool = True
+
 class CombatActionRequest(BaseModel):
     action: str
     target: Optional[str] = None
@@ -719,6 +729,18 @@ MOCK_EQUIPMENT = {
             "speed": 25,
             "requirements": {"power": 4, "crew": 0, "slots": 0},
             "price": 28000
+        },
+        {
+            "symbol": "ENGINE_HYPER_DRIVE_I", 
+            "name": "Hyper Drive I",
+            "description": "Ultra-fast hyperdrive engine",
+            "speed": 40,
+            "requirements": {"power": 8, "crew": 1, "slots": 0},
+            "price": 60000
+        }
+    ]
+}
+
 # Resource Management Models
 class ResourceData(BaseModel):
     fuel: dict
@@ -1107,6 +1129,155 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
             raise HTTPException(status_code=response.status_code, detail=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/jump")
+async def jump_ship(ship_symbol: str, request: JumpRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Jump ship to a connected waypoint via jump gate"""
+    if not HAS_VALID_TOKEN:
+        # Mock jump response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Check if ship is in orbit
+        if mock_ship["nav"]["status"] != "IN_ORBIT":
+            raise HTTPException(status_code=400, detail="Ship must be in orbit to jump")
+        
+        # For demo, allow jumping to any system
+        mock_ship["nav"]["status"] = "IN_TRANSIT"
+        return {
+            "data": {
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 30, "remainingSeconds": 30},
+                "nav": mock_ship["nav"],
+                "transaction": {"waypointSymbol": request.waypointSymbol, "price": 100, "units": 1}
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"waypointSymbol": request.waypointSymbol}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/jump", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/warp")
+async def warp_ship(ship_symbol: str, request: WarpRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Warp ship to a target waypoint in another system"""
+    if not HAS_VALID_TOKEN:
+        # Mock warp response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Check if ship is in orbit
+        if mock_ship["nav"]["status"] != "IN_ORBIT":
+            raise HTTPException(status_code=400, detail="Ship must be in orbit to warp")
+        
+        # Check if ship has warp drive (mock check)
+        has_warp_drive = any(module.get("symbol", "").startswith("MODULE_WARP_DRIVE") for module in mock_ship.get("modules", []))
+        if not has_warp_drive:
+            raise HTTPException(status_code=400, detail="Ship must have a warp drive to warp")
+        
+        mock_ship["nav"]["status"] = "IN_TRANSIT"
+        return {
+            "data": {
+                "fuel": {"current": 40, "capacity": 100, "consumed": {"amount": 10, "timestamp": "2023-11-01T00:00:00.000Z"}},
+                "nav": mock_ship["nav"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"waypointSymbol": request.waypointSymbol}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/warp", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/route")
+async def plan_route(ship_symbol: str, request: RouteRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Plan a multi-waypoint route for the ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock route planning response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Simple mock route calculation
+        route_legs = []
+        for i, waypoint in enumerate(request.waypoints):
+            route_legs.append({
+                "waypoint": waypoint,
+                "estimated_fuel": 2 * (i + 1),
+                "estimated_time": 300 * (i + 1)  # 5 minutes per leg
+            })
+        
+        return {
+            "data": {
+                "ship_symbol": ship_symbol,
+                "waypoints": request.waypoints,
+                "route_legs": route_legs,
+                "total_fuel_estimate": sum(leg["estimated_fuel"] for leg in route_legs),
+                "total_time_estimate": sum(leg["estimated_time"] for leg in route_legs),
+                "optimized_for_fuel": request.optimize_fuel
+            }
+        }
+    
+    # For real API, this would be a more complex route planning algorithm
+    # For now, return a simple response
+    return {
+        "data": {
+            "ship_symbol": ship_symbol,
+            "waypoints": request.waypoints,
+            "message": "Route planning not yet implemented for live API"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/emergency-stop")
+async def emergency_stop(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Emergency stop - attempt to abort current navigation"""
+    if not HAS_VALID_TOKEN:
+        # Mock emergency stop response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        if mock_ship["nav"]["status"] == "IN_TRANSIT":
+            mock_ship["nav"]["status"] = "IN_ORBIT"
+            return {
+                "data": {
+                    "nav": mock_ship["nav"],
+                    "message": "Emergency stop executed. Ship is now in orbit.",
+                    "fuel_consumed": 5
+                }
+            }
+        else:
+            return {
+                "data": {
+                    "nav": mock_ship["nav"],
+                    "message": "Ship is not in transit. No action taken."
+                }
+            }
+    
+    # For real API, this would attempt to stop the ship if possible
+    # Since there's no direct emergency stop in SpaceTraders API,
+    # we'd need to implement this as a client-side feature
+    return {
+        "data": {
+            "message": "Emergency stop not supported in live API"
+        }
+    }
 
 @app.post("/api/ships/{ship_symbol}/combat/weapons")
 async def manage_weapons(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
@@ -2048,17 +2219,10 @@ async def create_survey(ship_symbol: str, client: httpx.AsyncClient = Depends(ge
 
 @app.get("/api/ships/{ship_symbol}/cooldown")
 async def get_ship_cooldown(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
-    """Get current ship cooldown status"""
+    """Get ship's reactor cooldown status"""
     if not HAS_VALID_TOKEN:
-        # Mock response - no cooldown
-        return {
-            "data": {
-                "shipSymbol": ship_symbol,
-                "totalSeconds": 0,
-                "remainingSeconds": 0,
-                "expiration": None
-            }
-        }
+        # Mock cooldown response - no cooldown for demo
+        return {"data": None}
     
     try:
         headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
@@ -2066,16 +2230,8 @@ async def get_ship_cooldown(ship_symbol: str, client: httpx.AsyncClient = Depend
         
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 404:
-            # No cooldown
-            return {
-                "data": {
-                    "shipSymbol": ship_symbol,
-                    "totalSeconds": 0,
-                    "remainingSeconds": 0,
-                    "expiration": None
-                }
-            }
+        elif response.status_code == 204:
+            return {"data": None}  # No cooldown
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
     except Exception as e:

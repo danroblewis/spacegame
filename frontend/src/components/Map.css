@@ -272,3 +272,43 @@
     justify-content: center;
   }
 }
+
+/* Quick Navigation Buttons */
+.quick-nav {
+  font-size: 0.8rem !important;
+  padding: 6px 10px !important;
+  margin: 0 2px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.jump-btn.quick-nav {
+  background: linear-gradient(135deg, #bb86fc 0%, #9c27b0 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.jump-btn.quick-nav:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d1a3ff 0%, #ba68c8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(187, 134, 252, 0.4);
+}
+
+.warp-btn.quick-nav {
+  background: linear-gradient(135deg, #64ffda 0%, #00bcd4 100%);
+  border: none;
+  color: #000000;
+}
+
+.warp-btn.quick-nav:hover:not(:disabled) {
+  background: linear-gradient(135deg, #80ffda 0%, #26c6da 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(100, 255, 218, 0.4);
+}
+
+.quick-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
