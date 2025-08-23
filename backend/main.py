@@ -41,7 +41,6 @@ class Agent(BaseModel):
     credits: int
     startingFaction: str
 
-<<<<<<< HEAD
 # Ship modification models
 class ShipRequirements(BaseModel):
     power: int
@@ -181,6 +180,11 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+class CombatActionRequest(BaseModel):
+    action: str
+    target: Optional[str] = None
+    params: Optional[dict] = None
+
 class RefuelRequest(BaseModel):
     units: Optional[int] = None
 
@@ -273,10 +277,16 @@ MOCK_SHIPS = [
         },
         "crew": {"current": 2, "capacity": 4},
         "frame": {"name": "Explorer Frame", "symbol": "FRAME_EXPLORER"},
-        "reactor": {"name": "Basic Reactor", "symbol": "REACTOR_SOLAR_I", "powerOutput": 10},
-        "engine": {"name": "Basic Engine", "symbol": "ENGINE_IMPULSE_DRIVE_I", "speed": 20},
-        "modules": [{"name": "Basic Module", "symbol": "MODULE_CARGO_HOLD_I", "description": "Basic cargo storage"}],
-        "mounts": [{"name": "Basic Mount", "symbol": "MOUNT_SENSOR_ARRAY_I", "description": "Basic sensor array"}],
+        "reactor": {"name": "Basic Reactor", "symbol": "REACTOR_FUSION_I", "powerOutput": 15},
+        "engine": {"name": "Basic Engine", "symbol": "ENGINE_ION_DRIVE_I", "speed": 25},
+        "modules": [
+            {"name": "Shield Generator I", "symbol": "MODULE_SHIELD_GENERATOR_I", "description": "Basic shield generator"},
+            {"name": "Cargo Hold I", "symbol": "MODULE_CARGO_HOLD_I", "description": "Basic cargo storage"}
+        ],
+        "mounts": [
+            {"name": "Laser Cannon I", "symbol": "MOUNT_LASER_CANNON_I", "description": "Basic laser cannon"},
+            {"name": "Missile Launcher I", "symbol": "MOUNT_MISSILE_LAUNCHER_I", "description": "Basic missile launcher"}
+        ],
         "cargo": {"units": 50, "capacity": 100, "inventory": [{"symbol": "FUEL", "units": 50}]}
     }
 ]
@@ -374,7 +384,6 @@ MOCK_FACTIONS = [
     }
 ]
 
-<<<<<<< HEAD
 # Mock equipment data for ship modifications
 MOCK_EQUIPMENT = {
     "modules": [
@@ -834,7 +843,6 @@ MOCK_SCAN_RESULTS = {
             "cargo": {"units": 10, "capacity": 20},
             "threat_level": "MEDIUM",
             "distance": 45.2
->>>>>>> origin/main
         }
     ]
 }
@@ -1100,8 +1108,211 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+@app.post("/api/ships/{ship_symbol}/combat/weapons")
+async def manage_weapons(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Arm or disarm ship weapons"""
+    if not HAS_VALID_TOKEN:
+        # Mock weapon management response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "action": request.action,
+                "message": f"Weapons {request.action}ed successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "action": request.action,
+            "message": f"Weapons {request.action}ed successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/shields")
+async def manage_shields(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate or deactivate ship shields"""
+    if not HAS_VALID_TOKEN:
+        # Mock shield management response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "action": request.action,
+                "message": f"Shields {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "action": request.action,
+            "message": f"Shields {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/target")
+async def target_acquisition(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Acquire or release target lock"""
+    if not HAS_VALID_TOKEN:
+        # Mock targeting response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "target": request.target,
+                "locked": request.action == "acquire",
+                "message": f"Target {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "target": request.target,
+            "locked": request.action == "acquire",
+            "message": f"Target {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/evasive")
+async def evasive_maneuvers(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Engage or disengage evasive maneuvers"""
+    if not HAS_VALID_TOKEN:
+        # Mock evasive maneuvers response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "evasive_mode": request.action == "engage",
+                "message": f"Evasive maneuvers {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "evasive_mode": request.action == "engage",
+            "message": f"Evasive maneuvers {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/point-defense")
+async def point_defense_system(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate or deactivate point defense systems"""
+    if not HAS_VALID_TOKEN:
+        # Mock point defense response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "point_defense_active": request.action == "activate",
+                "message": f"Point defense system {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "point_defense_active": request.action == "activate",
+            "message": f"Point defense system {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/missiles")
+async def launch_missiles(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Launch guided missiles at target"""
+    if not HAS_VALID_TOKEN:
+        # Mock missile launch response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "target": request.target,
+                "missiles_launched": request.params.get("count", 1) if request.params else 1,
+                "message": "Missiles launched successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "target": request.target,
+            "missiles_launched": request.params.get("count", 1) if request.params else 1,
+            "message": "Missiles launched successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.get("/api/ships/{ship_symbol}/combat/status")
+async def get_combat_status(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get current combat status of ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock combat status response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "combat_status": {
+                    "weapons_armed": False,
+                    "shields_active": False,
+                    "target_locked": False,
+                    "evasive_mode": False,
+                    "point_defense_active": False,
+                    "available_weapons": len([m for m in mock_ship["mounts"] if "WEAPON" in m.get("symbol", "") or "CANNON" in m.get("symbol", "") or "LAUNCHER" in m.get("symbol", "") or "TURRET" in m.get("symbol", "")]),
+                    "available_shields": len([m for m in mock_ship["modules"] if "SHIELD" in m.get("symbol", "")])
+                },
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "combat_status": {
+                "weapons_armed": False,
+                "shields_active": False,
+                "target_locked": False,
+                "evasive_mode": False,
+                "point_defense_active": False
+            },
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
 # Ship modification endpoints
 @app.get("/api/equipment")
 async def get_equipment():
@@ -1415,7 +1626,6 @@ async def activate_emergency_protocol(ship_symbol: str, protocol_type: str = "st
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
->>>>>>> origin/main
 
 @app.post("/api/ships/{ship_symbol}/refuel")
 async def refuel_ship(ship_symbol: str, request: RefuelRequest = RefuelRequest(), client: httpx.AsyncClient = Depends(get_httpx_client)):

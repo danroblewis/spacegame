@@ -9,6 +9,9 @@ const ShipModifications = ({ selectedShip, onShipUpdate, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [customName, setCustomName] = useState(selectedShip?.registration?.name || '');
+  const [selectedColor, setSelectedColor] = useState(selectedShip?.customization?.color || '');
+  const [selectedDecal, setSelectedDecal] = useState(selectedShip?.customization?.decal || '');
 
   useEffect(() => {
     if (selectedShip) {
@@ -167,9 +170,6 @@ const ShipModifications = ({ selectedShip, onShipUpdate, onClose }) => {
   };
 
   const renderCustomizationTab = () => {
-    const [customName, setCustomName] = useState(selectedShip?.registration?.name || '');
-    const [selectedColor, setSelectedColor] = useState(selectedShip?.customization?.color || '');
-    const [selectedDecal, setSelectedDecal] = useState(selectedShip?.customization?.decal || '');
 
     const handleCustomizationSubmit = () => {
       const customizationData = {};

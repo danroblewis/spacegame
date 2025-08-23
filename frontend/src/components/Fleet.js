@@ -1,20 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Map from './Map';
 import ShipModifications from './ShipModifications';
 import ShipActionsSidebar from './ShipActionsSidebar';
 
-const Fleet = () => {
+const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
   const [ships, setShips] = useState([]);
-  const [selectedShip, setSelectedShip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModifications, setShowModifications] = useState(false);
   const [message, setMessage] = useState(null);
-
-  useEffect(() => {
-    fetchShips();
-  }, []);
 
   // Auto-hide messages after 5 seconds
   useEffect(() => {
@@ -26,7 +21,7 @@ const Fleet = () => {
     }
   }, [message]);
 
-  const fetchShips = async () => {
+  const fetchShips = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/ships');
@@ -34,7 +29,7 @@ const Fleet = () => {
       
       // Auto-select first ship if none selected
       if (response.data.length > 0 && !selectedShip) {
-        setSelectedShip(response.data[0]);
+        onShipSelect(response.data[0]);
       }
       
       setError(null);
@@ -43,10 +38,14 @@ const Fleet = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedShip, onShipSelect]);
 
-  const handleShipSelect = (ship) => {
-    setSelectedShip(ship);
+  useEffect(() => {
+    fetchShips();
+  }, [fetchShips]);
+
+  const handleShipClick = (ship) => {
+    onShipSelect(ship);
   };
 
   const handleShipUpdate = (updatedShip) => {
@@ -56,10 +55,8 @@ const Fleet = () => {
         ship.symbol === updatedShip.symbol ? updatedShip : ship
       )
     );
-    // Update selected ship if it's the one that was updated
-    if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
-      setSelectedShip(updatedShip);
-    }
+    // Notify parent component
+    onShipUpdate(updatedShip);
   };
 
   const handleMessage = (messageText, type = 'info') => {
@@ -84,6 +81,25 @@ const Fleet = () => {
     return cargo.inventory.map(item => `${item.symbol}: ${item.units}`).join(', ');
   };
 
+  const formatEquipment = (ship) => {
+    const weapons = ship.mounts?.filter(mount => 
+      mount.symbol && (
+        mount.symbol.includes('LASER_CANNON') ||
+        mount.symbol.includes('MISSILE_LAUNCHER') ||
+        mount.symbol.includes('TURRET')
+      )
+    ) || [];
+    
+    const shields = ship.modules?.filter(module => 
+      module.symbol && module.symbol.includes('SHIELD_GENERATOR')
+    ) || [];
+
+    return {
+      weapons: weapons.length,
+      shields: shields.length
+    };
+  };
+
   if (loading) {
     return <div className="loading">Loading fleet data...</div>;
   }
@@ -94,7 +110,6 @@ const Fleet = () => {
 
   return (
     <div className="fleet">
-<<<<<<< HEAD
       <div className="card">
         <h1>Fleet Management</h1>
         <p>Total Ships: {ships.length}</p>
@@ -118,7 +133,7 @@ const Fleet = () => {
               <div 
                 key={ship.symbol} 
                 className={`ship-card ${selectedShip?.symbol === ship.symbol ? 'selected' : ''}`}
-                onClick={() => handleShipSelect(ship)}
+                onClick={() => handleShipClick(ship)}
               >
                 <div className="ship-header">
                   <span className="ship-name">{ship.symbol}</span>
@@ -198,7 +213,7 @@ const Fleet = () => {
                   <button 
                     className="modify-ship-btn"
                     onClick={() => {
-                      setSelectedShip(ship);
+                      onShipSelect(ship);
                       setShowModifications(true);
                     }}
                   >
@@ -249,7 +264,7 @@ const Fleet = () => {
                   <div 
                     key={ship.symbol} 
                     className={`ship-card ${selectedShip?.symbol === ship.symbol ? 'selected' : ''}`}
-                    onClick={() => handleShipSelect(ship)}
+                    onClick={() => handleShipClick(ship)}
                   >
                     <div className="ship-header">
                       <span className="ship-name">{ship.symbol}</span>
@@ -330,18 +345,6 @@ const Fleet = () => {
             </div>
           )}
         </div>
-        
-        <ShipActionsSidebar 
-          selectedShip={selectedShip} 
-          onShipUpdate={handleShipUpdate}
-          onMessage={handleMessage}
-        />
-        </div>
-        <ShipActionsSidebar 
-          selectedShip={selectedShip} 
-          onMessage={setMessage}
-          onShipUpdate={handleShipUpdate}
-        />
       </div>
 
       {/* Ship Modifications Modal */}

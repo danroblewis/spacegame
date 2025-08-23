@@ -5,7 +5,6 @@ const Systems = () => {
   const [systems, setSystems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedSystem, setSelectedSystem] = useState(null);
 
   useEffect(() => {
     fetchSystems();
