@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Fleet from './components/Fleet';
@@ -11,6 +11,18 @@ import ShipActionsSidebar from './components/ShipActionsSidebar';
 import './App.css';
 
 function App() {
+  const [selectedShip, setSelectedShip] = useState(null);
+
+  const handleShipSelect = (ship) => {
+    setSelectedShip(ship);
+  };
+
+  const handleShipUpdate = (updatedShip) => {
+    if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
+      setSelectedShip(updatedShip);
+    }
+  };
+
   return (
     <Router>
       <div className="App">
@@ -35,7 +47,13 @@ function App() {
           <div className="container">
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/fleet" element={<Fleet />} />
+              <Route path="/fleet" element={
+                <Fleet 
+                  selectedShip={selectedShip}
+                  onShipSelect={handleShipSelect}
+                  onShipUpdate={handleShipUpdate}
+                />
+              } />
               <Route path="/crew" element={<Crew />} />
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/resources" element={<ResourceManagement />} />
@@ -45,7 +63,10 @@ function App() {
           </div>
         </main>
 
-        <ShipActionsSidebar />
+        <ShipActionsSidebar 
+          selectedShip={selectedShip} 
+          onShipUpdate={handleShipUpdate}
+        />
       </div>
     </Router>
   );
