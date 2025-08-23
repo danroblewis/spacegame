@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Fleet from './components/Fleet';
 import Systems from './components/Systems';
 import Factions from './components/Factions';
+import Intelligence from './components/Intelligence';
 import ShipActionsSidebar from './components/ShipActionsSidebar';
 import './App.css';
 
@@ -19,6 +20,7 @@ function App() {
             <ul className="nav-links">
               <li><Link to="/">Dashboard</Link></li>
               <li><Link to="/fleet">Fleet</Link></li>
+              <li><Link to="/intelligence">Intelligence</Link></li>
               <li><Link to="/systems">Systems</Link></li>
               <li><Link to="/factions">Factions</Link></li>
             </ul>
@@ -30,6 +32,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/fleet" element={<Fleet />} />
+              <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/systems" element={<Systems />} />
               <Route path="/factions" element={<Factions />} />
             </Routes>
