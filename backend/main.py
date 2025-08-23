@@ -76,6 +76,20 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+# Add new Pydantic models for cargo operations before line 78
+class CargoOperationRequest(BaseModel):
+    symbol: str
+    units: int
+
+class JettisonRequest(BaseModel):
+    symbol: str
+    units: int
+
+class TransferCargoRequest(BaseModel):
+    symbol: str
+    units: int
+    destination: str  # Ship symbol to transfer to
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -438,6 +452,503 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
     try:
         headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
         response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/orbit", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/cargo")
+async def get_ship_cargo(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get cargo details for a specific ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock cargo response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        return {"data": mock_ship["cargo"]}
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/cargo", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/purchase")
+async def purchase_cargo(ship_symbol: str, request: CargoOperationRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Purchase cargo for a ship from the local market"""
+    if not HAS_VALID_TOKEN:
+        # Mock purchase response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Check cargo capacity
+        current_cargo = mock_ship["cargo"]["units"]
+        cargo_capacity = mock_ship["cargo"]["capacity"]
+        
+        if current_cargo + request.units > cargo_capacity:
+            raise HTTPException(status_code=400, detail="Insufficient cargo capacity")
+        
+        # Add to inventory or update existing item
+        existing_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == request.symbol), None)
+        if existing_item:
+            existing_item["units"] += request.units
+        else:
+            mock_ship["cargo"]["inventory"].append({
+                "symbol": request.symbol,
+                "name": request.symbol.replace("_", " ").title(),
+                "description": f"A unit of {request.symbol}",
+                "units": request.units
+            })
+        
+        mock_ship["cargo"]["units"] += request.units
+        
+        # Mock transaction data
+        return {
+            "data": {
+                "agent": {"symbol": "DEMO_AGENT", "credits": 999000},  # Reduced credits
+                "cargo": mock_ship["cargo"],
+                "transaction": {
+                    "symbol": request.symbol,
+                    "type": "PURCHASE",
+                    "units": request.units,
+                    "pricePerUnit": 100,  # Mock price
+                    "totalPrice": request.units * 100,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"symbol": request.symbol, "units": request.units}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/purchase", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/sell")
+async def sell_cargo(ship_symbol: str, request: CargoOperationRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Sell cargo from a ship to the local market"""
+    if not HAS_VALID_TOKEN:
+        # Mock sell response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Find and remove/reduce item from inventory
+        existing_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == request.symbol), None)
+        if not existing_item:
+            raise HTTPException(status_code=400, detail="Item not found in cargo")
+        
+        if existing_item["units"] < request.units:
+            raise HTTPException(status_code=400, detail="Insufficient units to sell")
+        
+        existing_item["units"] -= request.units
+        mock_ship["cargo"]["units"] -= request.units
+        
+        # Remove item if no units left
+        if existing_item["units"] <= 0:
+            mock_ship["cargo"]["inventory"].remove(existing_item)
+        
+        return {
+            "data": {
+                "agent": {"symbol": "DEMO_AGENT", "credits": 1001000},  # Increased credits
+                "cargo": mock_ship["cargo"],
+                "transaction": {
+                    "symbol": request.symbol,
+                    "type": "SELL",
+                    "units": request.units,
+                    "pricePerUnit": 120,  # Mock sell price (higher than purchase)
+                    "totalPrice": request.units * 120,
+                    "timestamp": "2023-11-01T00:00:00.000Z"
+                }
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"symbol": request.symbol, "units": request.units}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/sell", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/jettison")
+async def jettison_cargo(ship_symbol: str, request: JettisonRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Jettison cargo from a ship (emergency dump)"""
+    if not HAS_VALID_TOKEN:
+        # Mock jettison response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Find and remove/reduce item from inventory
+        existing_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == request.symbol), None)
+        if not existing_item:
+            raise HTTPException(status_code=400, detail="Item not found in cargo")
+        
+        if existing_item["units"] < request.units:
+            raise HTTPException(status_code=400, detail="Insufficient units to jettison")
+        
+        existing_item["units"] -= request.units
+        mock_ship["cargo"]["units"] -= request.units
+        
+        # Remove item if no units left
+        if existing_item["units"] <= 0:
+            mock_ship["cargo"]["inventory"].remove(existing_item)
+        
+        return {
+            "data": {
+                "cargo": mock_ship["cargo"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"symbol": request.symbol, "units": request.units}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/jettison", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/transfer")
+async def transfer_cargo(ship_symbol: str, request: TransferCargoRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Transfer cargo between ships"""
+    if not HAS_VALID_TOKEN:
+        # Mock transfer response
+        source_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not source_ship:
+            raise HTTPException(status_code=404, detail="Source ship not found")
+        
+        # For demo, we'll just update the source ship (destination ship logic would be more complex)
+        existing_item = next((item for item in source_ship["cargo"]["inventory"] if item["symbol"] == request.symbol), None)
+        if not existing_item:
+            raise HTTPException(status_code=400, detail="Item not found in cargo")
+        
+        if existing_item["units"] < request.units:
+            raise HTTPException(status_code=400, detail="Insufficient units to transfer")
+        
+        existing_item["units"] -= request.units
+        source_ship["cargo"]["units"] -= request.units
+        
+        # Remove item if no units left
+        if existing_item["units"] <= 0:
+            source_ship["cargo"]["inventory"].remove(existing_item)
+        
+        return {
+            "data": {
+                "cargo": source_ship["cargo"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"symbol": request.symbol, "units": request.units}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/transfer", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/systems/{system_symbol}/waypoints/{waypoint_symbol}/market")
+async def get_market(system_symbol: str, waypoint_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get market information for a waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock market data
+        if waypoint_symbol == "X1-DF55-20250X":
+            return {
+                "data": {
+                    "symbol": waypoint_symbol,
+                    "exports": [
+                        {"symbol": "FOOD", "name": "Food", "description": "Basic food supplies"},
+                        {"symbol": "FUEL", "name": "Fuel", "description": "Ship fuel"}
+                    ],
+                    "imports": [
+                        {"symbol": "METAL_ORE", "name": "Metal Ore", "description": "Raw metal ore"},
+                        {"symbol": "RARE_METALS", "name": "Rare Metals", "description": "Precious metals"}
+                    ],
+                    "exchange": [
+                        {"symbol": "EQUIPMENT", "name": "Equipment", "description": "General equipment"}
+                    ],
+                    "tradeGoods": [
+                        {
+                            "symbol": "FOOD",
+                            "name": "Food",
+                            "description": "Basic food supplies",
+                            "tradeVolume": 100,
+                            "supply": "ABUNDANT",
+                            "purchasePrice": 95,
+                            "sellPrice": 105
+                        },
+                        {
+                            "symbol": "FUEL",
+                            "name": "Fuel", 
+                            "description": "Ship fuel",
+                            "tradeVolume": 200,
+                            "supply": "HIGH",
+                            "purchasePrice": 80,
+                            "sellPrice": 90
+                        },
+                        {
+                            "symbol": "METAL_ORE",
+                            "name": "Metal Ore",
+                            "description": "Raw metal ore",
+                            "tradeVolume": 50,
+                            "supply": "SCARCE",
+                            "purchasePrice": 150,
+                            "sellPrice": 160
+                        }
+                    ]
+                }
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Market not found")
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/systems/{system_symbol}/waypoints/{waypoint_symbol}/market", 
+                                  headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/cargo/optimize")
+async def optimize_cargo(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Optimize cargo arrangement for maximum efficiency"""
+    if not HAS_VALID_TOKEN:
+        # Mock optimization response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Simulate cargo optimization by sorting by value density
+        if mock_ship["cargo"]["inventory"]:
+            mock_ship["cargo"]["inventory"].sort(key=lambda x: x["units"], reverse=True)
+        
+        return {
+            "data": {
+                "cargo": mock_ship["cargo"],
+                "optimization": {
+                    "efficiency_improvement": "15%",
+                    "space_saved": 5,
+                    "value_density_optimized": True,
+                    "recommendations": [
+                        "High-value items moved to secure compartments",
+                        "Bulk goods consolidated",
+                        "Emergency supplies positioned for quick access"
+                    ]
+                }
+            }
+        }
+    
+    # For real API, this would call SpaceTraders optimization endpoints
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/cargo/optimize", 
+                                   headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/cargo/scan")
+async def scan_cargo(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Perform detailed cargo scanning and analysis"""
+    if not HAS_VALID_TOKEN:
+        # Mock scan response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        cargo = mock_ship["cargo"]
+        total_value = sum(item["units"] * 100 for item in cargo["inventory"])
+        efficiency = round((cargo["units"] / cargo["capacity"]) * 100)
+        
+        return {
+            "data": {
+                "scan_results": {
+                    "total_items": len(cargo["inventory"]),
+                    "total_units": cargo["units"],
+                    "capacity_used": efficiency,
+                    "estimated_value": total_value,
+                    "cargo_integrity": "98%",
+                    "contraband_detected": False,
+                    "hidden_compartments": 0,
+                    "item_analysis": [
+                        {
+                            "symbol": item["symbol"],
+                            "units": item["units"],
+                            "condition": "Good",
+                            "market_value": item["units"] * 100,
+                            "rarity": "Common" if item["symbol"] in ["FUEL", "FOOD"] else "Rare"
+                        } for item in cargo["inventory"]
+                    ],
+                    "recommendations": [
+                        "Cargo arrangement is optimal",
+                        "No maintenance required",
+                        f"Consider selling {cargo['inventory'][0]['symbol'] if cargo['inventory'] else 'N/A'} at next marketplace"
+                    ]
+                }
+            }
+        }
+    
+    # For real API implementation
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/cargo/scan", 
+                                   headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class SmugglingRequest(BaseModel):
+    action: str  # "hide", "reveal", "configure_compartment"
+    cargo_symbol: Optional[str] = None
+    compartment_id: Optional[int] = None
+
+@app.post("/api/ships/{ship_symbol}/smuggling")
+async def smuggling_operations(ship_symbol: str, request: SmugglingRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Manage smuggling operations and hidden compartments"""
+    if not HAS_VALID_TOKEN:
+        # Mock smuggling response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Initialize smuggling data if not exists
+        if "smuggling" not in mock_ship:
+            mock_ship["smuggling"] = {
+                "hidden_compartments": [],
+                "max_compartments": 2,
+                "stealth_rating": 75,
+                "detection_risk": "Low"
+            }
+        
+        smuggling_data = mock_ship["smuggling"]
+        
+        if request.action == "configure_compartment":
+            if len(smuggling_data["hidden_compartments"]) < smuggling_data["max_compartments"]:
+                new_compartment = {
+                    "id": len(smuggling_data["hidden_compartments"]) + 1,
+                    "capacity": 10,
+                    "contents": [],
+                    "stealth_level": "Standard"
+                }
+                smuggling_data["hidden_compartments"].append(new_compartment)
+                
+        elif request.action == "hide" and request.cargo_symbol:
+            # Find cargo item and move to hidden compartment
+            cargo_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == request.cargo_symbol), None)
+            if cargo_item and smuggling_data["hidden_compartments"]:
+                compartment = smuggling_data["hidden_compartments"][0]
+                if len(compartment["contents"]) < compartment["capacity"]:
+                    compartment["contents"].append({
+                        "symbol": cargo_item["symbol"],
+                        "units": min(cargo_item["units"], 5),  # Hide some units
+                        "concealment": "Active"
+                    })
+                    cargo_item["units"] -= min(cargo_item["units"], 5)
+                    if cargo_item["units"] <= 0:
+                        mock_ship["cargo"]["inventory"].remove(cargo_item)
+        
+        elif request.action == "reveal":
+            # Move items back from hidden compartments
+            for compartment in smuggling_data["hidden_compartments"]:
+                for hidden_item in compartment["contents"]:
+                    existing_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == hidden_item["symbol"]), None)
+                    if existing_item:
+                        existing_item["units"] += hidden_item["units"]
+                    else:
+                        mock_ship["cargo"]["inventory"].append({
+                            "symbol": hidden_item["symbol"],
+                            "name": hidden_item["symbol"].replace("_", " ").title(),
+                            "description": f"A unit of {hidden_item['symbol']}",
+                            "units": hidden_item["units"]
+                        })
+                compartment["contents"] = []
+        
+        return {
+            "data": {
+                "smuggling_status": smuggling_data,
+                "message": f"Smuggling operation '{request.action}' completed successfully"
+            }
+        }
+    
+    # For real API implementation
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = request.dict()
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/smuggling", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/smuggling/status")
+async def get_smuggling_status(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get current smuggling status and hidden compartment information"""
+    if not HAS_VALID_TOKEN:
+        # Mock smuggling status
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        smuggling_data = mock_ship.get("smuggling", {
+            "hidden_compartments": [],
+            "max_compartments": 2,
+            "stealth_rating": 75,
+            "detection_risk": "Low"
+        })
+        
+        return {"data": smuggling_data}
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/smuggling/status", 
+                                  headers=headers)
         
         if response.status_code == 200:
             return response.json()

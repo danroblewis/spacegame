@@ -363,3 +363,493 @@
     margin-right: 0;
   }
 }
+
+/* Fleet Layout */
+.fleet-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.fleet-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Ship Actions Sidebar */
+.ship-actions-sidebar {
+  width: 400px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.ship-actions-sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-radius: 10px 10px 0 0;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+  background: var(--hover-color);
+  color: var(--primary-color);
+}
+
+.sidebar-content {
+  padding: 16px;
+}
+
+/* Notifications */
+.notification {
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  animation: slideIn 0.3s ease;
+}
+
+.notification.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.notification.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.notification.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: var(--primary-color);
+  background: var(--hover-color);
+}
+
+.tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background: var(--hover-color);
+}
+
+/* Tab Content */
+.tab-content {
+  min-height: 300px;
+}
+
+.action-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.action-section h4,
+.action-section h5 {
+  margin: 0 0 12px 0;
+  color: var(--primary-color);
+  font-size: 1.1em;
+}
+
+/* Cargo Summary */
+.cargo-summary {
+  margin-bottom: 20px;
+}
+
+.cargo-stats {
+  margin-top: 8px;
+}
+
+.cargo-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.cargo-fill {
+  height: 100%;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  transition: width 0.3s ease;
+}
+
+/* Cargo Inventory */
+.cargo-inventory {
+  margin-bottom: 20px;
+}
+
+.cargo-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.item-symbol {
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.item-units {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.item-actions button {
+  padding: 4px 8px;
+  font-size: 0.8em;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.item-actions button:hover {
+  background: var(--hover-color);
+  border-color: var(--primary-color);
+}
+
+/* Forms */
+.action-section form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-section select,
+.action-section input {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9em;
+}
+
+.action-section select:focus,
+.action-section input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.action-section button[type="submit"] {
+  padding: 12px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.action-section button[type="submit"]:hover:not(:disabled) {
+  background: var(--secondary-color);
+  transform: translateY(-1px);
+}
+
+.action-section button[type="submit"]:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-section button.danger {
+  background: #dc3545;
+}
+
+.action-section button.danger:hover:not(:disabled) {
+  background: #c82333;
+}
+
+/* Market */
+.market-goods {
+  margin-top: 16px;
+}
+
+.market-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.good-info strong {
+  color: var(--primary-color);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.good-prices,
+.good-supply {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.no-market {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.no-market p {
+  margin-bottom: 8px;
+}
+
+/* Advanced Actions */
+.advanced-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advanced-actions button {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.advanced-actions button:hover:not(:disabled) {
+  background: var(--hover-color);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+/* Smuggling */
+.smuggling-info {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.smuggling-info p {
+  margin-bottom: 8px;
+}
+
+.hidden-compartments {
+  margin: 12px 0;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+}
+
+.compartment-info {
+  margin-bottom: 8px;
+  font-size: 0.85em;
+}
+
+.compartment-info p {
+  margin-bottom: 4px;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.hidden-item {
+  display: inline-block;
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+  font-size: 0.8em;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+}
+
+.smuggling-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.smuggling-actions button {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9em;
+}
+
+.smuggling-actions button:hover:not(:disabled) {
+  background: var(--hover-color);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.smuggling-actions button:disabled {
+  background: var(--text-secondary);
+  color: white;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.smuggling-actions .reveal-btn {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.smuggling-actions .reveal-btn:hover:not(:disabled) {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+/* Additional item action styling */
+.item-actions button:last-child {
+  background: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+.item-actions button:last-child:hover {
+  background: #5a6268;
+  border-color: #545b62;
+}
+
+/* Small elements */
+.action-section small {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .fleet-layout {
+    flex-direction: column;
+  }
+  
+  .ship-actions-sidebar {
+    width: 100%;
+    position: relative;
+    top: auto;
+    max-height: none;
+  }
+  
+  .ship-actions-sidebar.collapsed {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    flex-direction: column;
+  }
+  
+  .tab {
+    border-bottom: 1px solid var(--border-color);
+    border-right: none;
+  }
+  
+  .tab.active {
+    border-bottom-color: var(--border-color);
+    border-left: 3px solid var(--primary-color);
+  }
+  
+  .action-section {
+    padding: 12px;
+  }
+  
+  .cargo-item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
