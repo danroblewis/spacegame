@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Map from './Map';
 
@@ -7,11 +7,7 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchShips();
-  }, []);
-
-  const fetchShips = async () => {
+  const fetchShips = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/ships');
@@ -28,7 +24,11 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedShip, onShipSelect]);
+
+  useEffect(() => {
+    fetchShips();
+  }, [fetchShips]);
 
   const handleShipClick = (ship) => {
     onShipSelect(ship);
