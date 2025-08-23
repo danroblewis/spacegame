@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Map from './Map';
 
-const Fleet = () => {
+const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
   const [ships, setShips] = useState([]);
-  const [selectedShip, setSelectedShip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,9 +17,9 @@ const Fleet = () => {
       const response = await axios.get('/api/ships');
       setShips(response.data);
       
-      // Auto-select first ship if none selected
-      if (response.data.length > 0 && !selectedShip) {
-        setSelectedShip(response.data[0]);
+      // Auto-select first ship if none selected and ships are available
+      if (response.data.length > 0 && !selectedShip && onShipSelect) {
+        onShipSelect(response.data[0]);
       }
       
       setError(null);
@@ -32,7 +31,9 @@ const Fleet = () => {
   };
 
   const handleShipSelect = (ship) => {
-    setSelectedShip(ship);
+    if (onShipSelect) {
+      onShipSelect(ship);
+    }
   };
 
   const handleShipUpdate = (updatedShip) => {
@@ -43,8 +44,8 @@ const Fleet = () => {
       )
     );
     // Update selected ship if it's the one that was updated
-    if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
-      setSelectedShip(updatedShip);
+    if (onShipUpdate) {
+      onShipUpdate(updatedShip);
     }
   };
 
