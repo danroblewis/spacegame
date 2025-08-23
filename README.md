@@ -50,7 +50,24 @@ This project aims to create an intuitive GUI frontend that makes SpaceTraders ac
 
 ## Getting Started
 
-*Development setup instructions will be added as the project progresses*
+### Configuration
+
+This project uses environment variables for configuration. Create a `.env` file in the root directory with the following variables:
+
+```bash
+# SpaceTraders API Configuration
+SPACETRADERS_TOKEN=your_agent_token_here
+SPACETRADERS_CALLSIGN=your_agent_symbol_here
+
+# Optional: API Base URL (defaults to https://api.spacetraders.io/v2)
+SPACETRADERS_API_URL=https://api.spacetraders.io/v2
+```
+
+**Important**: The `.env` file is excluded from version control (VCS) for security reasons. Never commit your API tokens or sensitive configuration data.
+
+### Development Setup
+
+*Additional development setup instructions will be added as the project progresses*
 
 ## Contributing
 
@@ -62,6 +79,7 @@ This is an open-source project welcoming contributions from the SpaceTraders com
 - [SpaceTraders API Documentation](https://spacetraders.io/docs)
 - [Community Discord](https://discord.gg/spacetraders)
 - [Community Projects](https://spacetraders.io/projects)
+- **OpenAPI Specification**: [`spacetraders_openapi.json`](./spacetraders_openapi.json) - Complete API schema for v2.3.0
 
 ## License
 
