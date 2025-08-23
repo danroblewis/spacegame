@@ -175,7 +175,6 @@ const Fleet = () => {
                   </div>
                 )}
               </div>
-              </div>
             ))}
           </div>
         </div>
