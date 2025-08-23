@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Map from './Map';
+import { useShip } from '../App';
 
 const Fleet = () => {
   const [ships, setShips] = useState([]);
-  const [selectedShip, setSelectedShip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { selectedShip, updateSelectedShip } = useShip();
 
   useEffect(() => {
     fetchShips();
@@ -20,7 +21,7 @@ const Fleet = () => {
       
       // Auto-select first ship if none selected
       if (response.data.length > 0 && !selectedShip) {
-        setSelectedShip(response.data[0]);
+        updateSelectedShip(response.data[0]);
       }
       
       setError(null);
@@ -32,10 +33,19 @@ const Fleet = () => {
   };
 
   const handleShipSelect = (ship) => {
-    setSelectedShip(ship);
+    updateSelectedShip(ship);
   };
 
   const handleShipUpdate = (updatedShip) => {
+    if (!updatedShip) {
+      // Ship was destroyed, remove from ships and clear selection
+      setShips(prevShips => 
+        prevShips.filter(ship => ship.symbol !== selectedShip?.symbol)
+      );
+      updateSelectedShip(null);
+      return;
+    }
+
     // Update the ship in the ships array
     setShips(prevShips => 
       prevShips.map(ship => 
@@ -44,7 +54,7 @@ const Fleet = () => {
     );
     // Update selected ship if it's the one that was updated
     if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
-      setSelectedShip(updatedShip);
+      updateSelectedShip(updatedShip);
     }
   };
 

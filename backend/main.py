@@ -76,6 +76,16 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+# Emergency action request models
+class EmergencyActionRequest(BaseModel):
+    confirm: bool = False
+
+class DistressBeaconRequest(BaseModel):
+    message: str = "Emergency assistance required"
+
+class EmergencyRepairRequest(BaseModel):
+    system: str  # which system to repair (hull, engine, reactor, etc.)
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -445,6 +455,180 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
             raise HTTPException(status_code=response.status_code, detail=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Emergency Actions
+@app.post("/api/ships/{ship_symbol}/eject-crew")
+async def eject_crew(ship_symbol: str, request: EmergencyActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Eject crew in emergency escape pods"""
+    if not request.confirm:
+        raise HTTPException(status_code=400, detail="Action requires confirmation")
+    
+    if not HAS_VALID_TOKEN:
+        # Mock eject crew response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        mock_ship["crew"]["current"] = 0  # All crew ejected
+        return {
+            "data": {
+                "message": "Emergency escape pods deployed. All crew members have been ejected safely.",
+                "crew": mock_ship["crew"],
+                "status": "CREW_EJECTED"
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": "Emergency escape pods deployed. All crew members have been ejected safely.",
+            "status": "CREW_EJECTED"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/self-destruct")
+async def self_destruct(ship_symbol: str, request: EmergencyActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Self-destruct ship - scuttle ship"""
+    if not request.confirm:
+        raise HTTPException(status_code=400, detail="Action requires confirmation")
+    
+    if not HAS_VALID_TOKEN:
+        # Mock self-destruct response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Remove ship from mock data (simulate destruction)
+        MOCK_SHIPS.remove(mock_ship)
+        return {
+            "data": {
+                "message": "Ship self-destruct sequence completed. Ship has been destroyed.",
+                "status": "DESTROYED"
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": "Ship self-destruct sequence completed. Ship has been destroyed.",
+            "status": "DESTROYED"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/distress-beacon")
+async def activate_distress_beacon(ship_symbol: str, request: DistressBeaconRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate distress beacon - call for help"""
+    if not HAS_VALID_TOKEN:
+        # Mock distress beacon response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "message": f"Distress beacon activated. Broadcasting: '{request.message}'",
+                "beacon_status": "ACTIVE",
+                "estimated_rescue_time": "15 minutes",
+                "nearby_ships": ["RESCUE_ALPHA", "PATROL_BETA"]
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": f"Distress beacon activated. Broadcasting: '{request.message}'",
+            "beacon_status": "ACTIVE"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/emergency-repair")
+async def emergency_repair(ship_symbol: str, request: EmergencyRepairRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Emergency repairs - quick fix critical systems"""
+    if not HAS_VALID_TOKEN:
+        # Mock emergency repair response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        valid_systems = ["hull", "engine", "reactor", "life_support", "navigation"]
+        if request.system not in valid_systems:
+            raise HTTPException(status_code=400, detail=f"Invalid system. Must be one of: {valid_systems}")
+        
+        return {
+            "data": {
+                "message": f"Emergency repair completed on {request.system}. System restored to 75% functionality.",
+                "repaired_system": request.system,
+                "integrity": "75%",
+                "status": "OPERATIONAL"
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": f"Emergency repair completed on {request.system}.",
+            "repaired_system": request.system,
+            "status": "OPERATIONAL"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/abandon-ship")
+async def abandon_ship(ship_symbol: str, request: EmergencyActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Abandon ship - leave ship in escape pods"""
+    if not request.confirm:
+        raise HTTPException(status_code=400, detail="Action requires confirmation")
+    
+    if not HAS_VALID_TOKEN:
+        # Mock abandon ship response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        mock_ship["crew"]["current"] = 0  # All crew abandoned
+        mock_ship["nav"]["status"] = "ABANDONED"
+        return {
+            "data": {
+                "message": "Ship abandoned. All crew members have escaped in emergency pods.",
+                "crew": mock_ship["crew"],
+                "nav": mock_ship["nav"],
+                "status": "ABANDONED"
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": "Ship abandoned. All crew members have escaped in emergency pods.",
+            "status": "ABANDONED"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/salvage-mode")
+async def activate_salvage_mode(ship_symbol: str, request: EmergencyActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate salvage mode - recover from severe damage"""
+    if not HAS_VALID_TOKEN:
+        # Mock salvage mode response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "message": "Salvage mode activated. Ship systems reconfigured for damage recovery operations.",
+                "mode": "SALVAGE",
+                "capabilities": ["emergency_repairs", "resource_recovery", "basic_navigation"],
+                "hull_integrity": "45%",
+                "estimated_recovery_time": "30 minutes"
+            }
+        }
+    
+    # For real API, this would be a custom emergency action
+    return {
+        "data": {
+            "message": "Salvage mode activated. Ship systems reconfigured for damage recovery operations.",
+            "mode": "SALVAGE"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
