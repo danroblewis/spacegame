@@ -2,15 +2,22 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Map from './Map';
 
-const Fleet = () => {
+const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
   const [ships, setShips] = useState([]);
-  const [selectedShip, setSelectedShip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [shipSecurityStatus, setShipSecurityStatus] = useState({});
 
   useEffect(() => {
     fetchShips();
   }, []);
+
+  // Fetch security status for all ships when ships list changes
+  useEffect(() => {
+    if (ships.length > 0) {
+      fetchAllSecurityStatus();
+    }
+  }, [ships]);
 
   const fetchShips = async () => {
     try {
@@ -20,7 +27,7 @@ const Fleet = () => {
       
       // Auto-select first ship if none selected
       if (response.data.length > 0 && !selectedShip) {
-        setSelectedShip(response.data[0]);
+        onShipSelect(response.data[0]);
       }
       
       setError(null);
@@ -31,8 +38,30 @@ const Fleet = () => {
     }
   };
 
+  const fetchAllSecurityStatus = async () => {
+    try {
+      const statusPromises = ships.map(ship =>
+        axios.get(`/api/ships/${ship.symbol}/security/status`)
+          .then(response => ({ shipSymbol: ship.symbol, status: response.data }))
+          .catch(error => ({ shipSymbol: ship.symbol, status: null }))
+      );
+      
+      const results = await Promise.all(statusPromises);
+      const statusMap = {};
+      results.forEach(result => {
+        if (result.status) {
+          statusMap[result.shipSymbol] = result.status;
+        }
+      });
+      
+      setShipSecurityStatus(statusMap);
+    } catch (error) {
+      console.error('Failed to fetch security status for ships:', error);
+    }
+  };
+
   const handleShipSelect = (ship) => {
-    setSelectedShip(ship);
+    onShipSelect(ship);
   };
 
   const handleShipUpdate = (updatedShip) => {
@@ -42,10 +71,8 @@ const Fleet = () => {
         ship.symbol === updatedShip.symbol ? updatedShip : ship
       )
     );
-    // Update selected ship if it's the one that was updated
-    if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
-      setSelectedShip(updatedShip);
-    }
+    // Call the parent's update handler
+    onShipUpdate(updatedShip);
   };
 
   const getShipStatusColor = (status) => {
@@ -59,6 +86,90 @@ const Fleet = () => {
       default:
         return 'inactive';
     }
+  };
+
+  const getShipCardClasses = (ship) => {
+    const security = shipSecurityStatus[ship.symbol];
+    let classes = 'ship-card';
+    
+    if (selectedShip?.symbol === ship.symbol) {
+      classes += ' selected';
+    }
+    
+    if (security) {
+      if (security.cloakingActive) {
+        classes += ' cloaked';
+      }
+      if (security.stealthModeActive) {
+        classes += ' stealth-mode';
+      }
+      if (security.signalJammingActive) {
+        classes += ' jamming-active';
+      }
+    }
+    
+    return classes;
+  };
+
+  const renderSecurityIndicators = (ship) => {
+    const security = shipSecurityStatus[ship.symbol];
+    if (!security) return null;
+    
+    const indicators = [];
+    
+    if (security.cloakingActive) {
+      indicators.push(
+        <span key="cloaking" className="security-indicator cloaking">
+          👻 CLOAKED
+        </span>
+      );
+    }
+    
+    if (security.stealthModeActive) {
+      indicators.push(
+        <span key="stealth" className="security-indicator stealth">
+          🌫️ STEALTH-{security.stealthModeLevel}
+        </span>
+      );
+    }
+    
+    if (security.signalJammingActive) {
+      indicators.push(
+        <span key="jamming" className="security-indicator jamming">
+          📡 JAMMING
+        </span>
+      );
+    }
+    
+    if (security.electronicWarfareActive) {
+      indicators.push(
+        <span key="warfare" className="security-indicator warfare">
+          💻 E-WAR
+        </span>
+      );
+    }
+    
+    if (security.countermeasuresActive) {
+      indicators.push(
+        <span key="countermeasures" className="security-indicator countermeasures">
+          ✨ DECOYS
+        </span>
+      );
+    }
+    
+    if (security.encryptionActive) {
+      indicators.push(
+        <span key="encryption" className="security-indicator encryption">
+          🔐 ENCRYPTED-{security.encryptionLevel}
+        </span>
+      );
+    }
+    
+    return indicators.length > 0 ? (
+      <div className="security-indicators">
+        {indicators}
+      </div>
+    ) : null;
   };
 
   const formatCargo = (cargo) => {
@@ -98,7 +209,7 @@ const Fleet = () => {
             {ships.map((ship) => (
               <div 
                 key={ship.symbol} 
-                className={`ship-card ${selectedShip?.symbol === ship.symbol ? 'selected' : ''}`}
+                className={getShipCardClasses(ship)}
                 onClick={() => handleShipSelect(ship)}
               >
                 <div className="ship-header">
@@ -134,6 +245,9 @@ const Fleet = () => {
                     <div className="detail-label">Frame</div>
                   </div>
                 </div>
+
+                {/* Security Status Indicators */}
+                {renderSecurityIndicators(ship)}
 
                 {ship.cargo && ship.cargo.inventory && ship.cargo.inventory.length > 0 && (
                   <div className="cargo-section">

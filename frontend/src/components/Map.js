@@ -8,6 +8,7 @@ const Map = ({ selectedShip, onShipUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [navigating, setNavigating] = useState(false);
+  const [securityStatus, setSecurityStatus] = useState(null);
   
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
@@ -21,6 +22,7 @@ const Map = ({ selectedShip, onShipUpdate }) => {
   useEffect(() => {
     if (selectedShip) {
       fetchSystemData();
+      fetchSecurityStatus();
     }
   }, [selectedShip]);
 
@@ -41,6 +43,18 @@ const Map = ({ selectedShip, onShipUpdate }) => {
       setError(err.response?.data?.detail || 'Failed to fetch map data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSecurityStatus = async () => {
+    if (!selectedShip) return;
+    
+    try {
+      const response = await axios.get(`/api/ships/${selectedShip.symbol}/security/status`);
+      setSecurityStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch security status:', error);
+      setSecurityStatus(null);
     }
   };
 
@@ -350,22 +364,108 @@ const Map = ({ selectedShip, onShipUpdate }) => {
                 {/* Ship indicator */}
                 {isShipLocation && (
                   <g>
+                    {/* Security effects */}
+                    {securityStatus?.cloakingActive && (
+                      <circle
+                        cx={waypoint.x}
+                        cy={waypoint.y}
+                        r={size + 15}
+                        fill="none"
+                        stroke="#9C27B0"
+                        strokeWidth="2"
+                        strokeDasharray="4,4"
+                        opacity="0.7"
+                        className="cloak-effect"
+                      />
+                    )}
+                    {securityStatus?.signalJammingActive && (
+                      <circle
+                        cx={waypoint.x}
+                        cy={waypoint.y}
+                        r={securityStatus.jammingRadius * 0.5}
+                        fill="none"
+                        stroke="#FF9800"
+                        strokeWidth="1"
+                        strokeDasharray="2,2"
+                        opacity="0.5"
+                      />
+                    )}
+                    {securityStatus?.stealthModeActive && (
+                      <circle
+                        cx={waypoint.x}
+                        cy={waypoint.y}
+                        r={size + 10}
+                        fill="none"
+                        stroke="#607D8B"
+                        strokeWidth="1"
+                        opacity="0.6"
+                        className="stealth-effect"
+                      />
+                    )}
+                    
+                    {/* Ship triangle */}
                     <polygon
                       points={`${waypoint.x},${waypoint.y - size - 8} ${waypoint.x - 6},${waypoint.y - size - 2} ${waypoint.x + 6},${waypoint.y - size - 2}`}
-                      fill="#00FF00"
+                      fill={securityStatus?.cloakingActive ? "#9C27B0" : "#00FF00"}
                       stroke="#FFF"
                       strokeWidth="1"
+                      opacity={securityStatus?.cloakingActive ? "0.6" : "1"}
                     />
+                    
+                    {/* Ship name */}
                     <text
                       x={waypoint.x}
                       y={waypoint.y - size - 12}
                       textAnchor="middle"
-                      fill="#00FF00"
+                      fill={securityStatus?.cloakingActive ? "#9C27B0" : "#00FF00"}
                       fontSize="10"
                       fontWeight="bold"
+                      opacity={securityStatus?.cloakingActive ? "0.6" : "1"}
                     >
                       {selectedShip.symbol}
                     </text>
+                    
+                    {/* Security status indicators */}
+                    {(securityStatus?.electronicWarfareActive || securityStatus?.countermeasuresActive || securityStatus?.encryptionActive) && (
+                      <g>
+                        {securityStatus?.electronicWarfareActive && (
+                          <text
+                            x={waypoint.x - 20}
+                            y={waypoint.y - size - 20}
+                            textAnchor="middle"
+                            fill="#F44336"
+                            fontSize="8"
+                            fontWeight="bold"
+                          >
+                            💻
+                          </text>
+                        )}
+                        {securityStatus?.countermeasuresActive && (
+                          <text
+                            x={waypoint.x}
+                            y={waypoint.y - size - 25}
+                            textAnchor="middle"
+                            fill="#4CAF50"
+                            fontSize="8"
+                            fontWeight="bold"
+                          >
+                            ✨
+                          </text>
+                        )}
+                        {securityStatus?.encryptionActive && (
+                          <text
+                            x={waypoint.x + 20}
+                            y={waypoint.y - size - 20}
+                            textAnchor="middle"
+                            fill="#2196F3"
+                            fontSize="8"
+                            fontWeight="bold"
+                          >
+                            🔐
+                          </text>
+                        )}
+                      </g>
+                    )}
                   </g>
                 )}
 

@@ -363,3 +363,259 @@
     margin-right: 0;
   }
 }
+
+/* Security & Stealth Action Styles */
+.selected-ship-info {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #2c5aa0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+.selected-ship-info h4 {
+  margin: 0 0 8px 0;
+  color: #64b5f6;
+  font-size: 1rem;
+}
+
+.selected-ship-info p {
+  margin: 2px 0;
+  font-size: 0.85rem;
+  color: #b0bec5;
+}
+
+.action-message {
+  background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  color: #fff;
+  font-size: 0.85rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.energy-status {
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  border: 1px solid #2196f3;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.action-group {
+  background: linear-gradient(135deg, #2c2c54 0%, #40407a 100%);
+  border: 1px solid #535395;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.action-group:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 1px solid #535395;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.action-icon {
+  font-size: 1.1rem;
+  min-width: 20px;
+}
+
+.action-name {
+  flex: 1;
+  color: #e1f5fe;
+}
+
+.status-active {
+  background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.status-cooldown {
+  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.action-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 32px;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.4);
+}
+
+.action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.action-btn:disabled {
+  background: linear-gradient(135deg, #616161 0%, #757575 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #455a64 0%, #607d8b 100%);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #37474f 0%, #455a64 100%);
+}
+
+.action-info {
+  padding: 0 12px 8px 12px;
+  font-size: 0.75rem;
+  color: #90a4ae;
+  text-align: center;
+}
+
+.no-ship-selected {
+  text-align: center;
+  padding: 20px;
+  color: #90a4ae;
+  font-style: italic;
+}
+
+.no-ship-selected p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Security status indicators for ship cards */
+.ship-card.cloaked {
+  opacity: 0.6;
+  border: 2px solid #9c27b0;
+  background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
+}
+
+.ship-card.stealth-mode {
+  border: 2px solid #607d8b;
+  background: linear-gradient(135deg, #263238 0%, #37474f 100%);
+}
+
+.ship-card.jamming-active {
+  border: 2px solid #ff9800;
+  background: linear-gradient(135deg, #e65100 0%, #ff9800 100%);
+}
+
+.security-indicators {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.security-indicator {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  color: #fff;
+  font-weight: bold;
+}
+
+.security-indicator.cloaking {
+  background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
+}
+
+.security-indicator.stealth {
+  background: linear-gradient(135deg, #424242 0%, #616161 100%);
+}
+
+.security-indicator.jamming {
+  background: linear-gradient(135deg, #e65100 0%, #ff9800 100%);
+}
+
+.security-indicator.warfare {
+  background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+}
+
+.security-indicator.countermeasures {
+  background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+}
+
+.security-indicator.encryption {
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+}
