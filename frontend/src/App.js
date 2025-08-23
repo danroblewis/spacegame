@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Fleet from './components/Fleet';
 import Systems from './components/Systems';
 import Factions from './components/Factions';
+import ShipActionsSidebar from './components/ShipActionsSidebar';
 import './App.css';
 
 function App() {
@@ -34,6 +35,8 @@ function App() {
             </Routes>
           </div>
         </main>
+
+        <ShipActionsSidebar />
       </div>
     </Router>
   );
