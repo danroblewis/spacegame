@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import './Map.css';
 
@@ -8,6 +8,15 @@ const Map = ({ selectedShip, onShipUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [navigating, setNavigating] = useState(false);
+  
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  const svgRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     if (selectedShip) {
@@ -104,6 +113,64 @@ const Map = ({ selectedShip, onShipUpdate }) => {
       setNavigating(false);
     }
   };
+
+  // Zoom and pan handlers
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
+    
+    // Zoom towards mouse position
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const scaleChange = newZoom / zoom;
+    const newPanX = mouseX - (mouseX - pan.x) * scaleChange;
+    const newPanY = mouseY - (mouseY - pan.y) * scaleChange;
+    
+    setZoom(newZoom);
+    setPan({ x: newPanX, y: newPanY });
+  }, [zoom, pan]);
+
+  const handleMouseDown = useCallback((e) => {
+    if (e.button === 0) { // Left mouse button only
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isDragging) {
+      setPan({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDoubleClick = useCallback(() => {
+    // Reset zoom and pan
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    setZoom(prev => Math.min(5, prev * 1.2));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setZoom(prev => Math.max(0.1, prev / 1.2));
+  }, []);
+
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   const getWaypointColor = (type) => {
     const colors = {
@@ -202,13 +269,33 @@ const Map = ({ selectedShip, onShipUpdate }) => {
             )}
           </div>
         </div>
+        <div className="map-controls">
+          <button onClick={zoomOut} className="zoom-btn" title="Zoom Out">−</button>
+          <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+          <button onClick={zoomIn} className="zoom-btn" title="Zoom In">+</button>
+          <button onClick={resetView} className="reset-btn" title="Reset View">⌂</button>
+        </div>
       </div>
 
-      <div className="map-view">
+      <div className="map-view" 
+           ref={containerRef}
+           onWheel={handleWheel}
+           onMouseDown={handleMouseDown}
+           onMouseMove={handleMouseMove}
+           onMouseUp={handleMouseUp}
+           onMouseLeave={handleMouseUp}
+           onDoubleClick={handleDoubleClick}
+           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      >
         <svg 
+          ref={svgRef}
           className="system-map" 
           viewBox={`${minX} ${minY} ${mapWidth} ${mapHeight}`}
           preserveAspectRatio="xMidYMid meet"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0'
+          }}
         >
           {/* Grid lines */}
           <defs>
@@ -348,6 +435,9 @@ const Map = ({ selectedShip, onShipUpdate }) => {
         </div>
         <div className="legend-note">
           Click on waypoints to navigate (ship must be in orbit)
+        </div>
+        <div className="legend-controls">
+          <strong>Map Controls:</strong> Mouse wheel to zoom, drag to pan, double-click to reset view
         </div>
       </div>
     </div>

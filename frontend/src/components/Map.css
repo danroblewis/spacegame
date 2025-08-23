@@ -16,6 +16,45 @@
   gap: 10px;
 }
 
+.map-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(45, 55, 72, 0.8);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #4a5568;
+}
+
+.zoom-btn, .reset-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: #2d3748;
+  color: #e2e8f0;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-btn:hover, .reset-btn:hover {
+  background: #4a5568;
+  color: #ffffff;
+}
+
+.zoom-level {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+}
+
 .map-header h3 {
   color: #ffffff;
   margin: 0;
@@ -110,6 +149,11 @@
   overflow: hidden;
   position: relative;
   min-height: 400px;
+  user-select: none;
+}
+
+.map-view:focus {
+  outline: none;
 }
 
 .system-map {
@@ -177,6 +221,14 @@
   border-top: 1px solid #4a5568;
 }
 
+.legend-controls {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #4a5568;
+}
+
 .map-placeholder, .map-loading, .map-error {
   display: flex;
   align-items: center;
@@ -204,6 +256,12 @@
   .ship-controls {
     width: 100%;
     justify-content: space-between;
+  }
+  
+  .map-controls {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
   }
   
   .system-map {
