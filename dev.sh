@@ -5,6 +5,10 @@
 
 echo "🚀 Starting SpaceTraders GUI development mode..."
 
+# Pull latest code from main branch
+echo "📥 Pulling latest code from main branch..."
+git pull origin main
+
 # Check if .env exists, create demo if not
 if [ ! -f .env ]; then
     echo "📝 Creating demo .env file..."
