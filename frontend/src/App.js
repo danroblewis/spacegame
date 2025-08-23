@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Fleet from './components/Fleet';
 import Systems from './components/Systems';
 import Factions from './components/Factions';
+import Crew from './components/Crew';
 import ShipActionsSidebar from './components/ShipActionsSidebar';
 import './App.css';
 
@@ -31,6 +32,7 @@ function App() {
             <ul className="nav-links">
               <li><Link to="/">Dashboard</Link></li>
               <li><Link to="/fleet">Fleet</Link></li>
+              <li><Link to="/crew">Crew</Link></li>
               <li><Link to="/systems">Systems</Link></li>
               <li><Link to="/factions">Factions</Link></li>
             </ul>
@@ -48,6 +50,7 @@ function App() {
                   onShipUpdate={handleShipUpdate}
                 />
               } />
+              <Route path="/crew" element={<Crew />} />
               <Route path="/systems" element={<Systems />} />
               <Route path="/factions" element={<Factions />} />
             </Routes>
