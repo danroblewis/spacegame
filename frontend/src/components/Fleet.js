@@ -159,8 +159,8 @@ const Fleet = () => {
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {ship.mounts && ship.mounts.length > 0 && (
                   <div className="mounts-section">
@@ -174,6 +174,7 @@ const Fleet = () => {
                     </div>
                   </div>
                 )}
+              </div>
               </div>
             ))}
           </div>
