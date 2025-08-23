@@ -19,7 +19,9 @@ function App() {
   };
 
   const handleShipUpdate = (updatedShip) => {
-    setSelectedShip(updatedShip);
+    if (selectedShip && selectedShip.symbol === updatedShip.symbol) {
+      setSelectedShip(updatedShip);
+    }
   };
 
   return (
@@ -47,16 +49,13 @@ function App() {
           <div className="container">
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route 
-                path="/fleet" 
-                element={
-                  <Fleet 
-                    selectedShip={selectedShip}
-                    onShipSelect={handleShipSelect}
-                    onShipUpdate={handleShipUpdate}
-                  />
-                } 
-              />
+              <Route path="/fleet" element={
+                <Fleet 
+                  selectedShip={selectedShip}
+                  onShipSelect={handleShipSelect}
+                  onShipUpdate={handleShipUpdate}
+                />
+              } />
               <Route path="/crew" element={<Crew />} />
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/resources" element={<ResourceManagement />} />
@@ -69,7 +68,7 @@ function App() {
 
         <ShipActionsSidebar 
           selectedShip={selectedShip} 
-          onShipUpdate={handleShipUpdate} 
+          onShipUpdate={handleShipUpdate}
         />
       </div>
     </Router>

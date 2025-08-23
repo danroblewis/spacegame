@@ -1392,6 +1392,12 @@
   }
 }
 
+/* Combat & Defense Styles */
+.combat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
 /* Ship modification styles */
 .ship-actions {
   margin-top: 15px;
@@ -1528,9 +1534,308 @@
 }
 
 .capabilities-list {
+
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+
+.combat-subsection {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.combat-subsection h5 {
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weapon-list, .shield-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weapon-item, .shield-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.weapon-name, .shield-name {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.weapon-status, .shield-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.weapon-status.armed {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.weapon-status.disarmed {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.shield-status.active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.shield-status.inactive {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.combat-btn {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 6px;
+  color: #667eea;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.combat-btn:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
+  transform: translateY(-1px);
+}
+
+.combat-btn.active {
+  background: rgba(102, 126, 234, 0.3);
+  border-color: #667eea;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.combat-btn:disabled {
+  background: rgba(108, 117, 125, 0.1);
+  border-color: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.combat-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.missile-btn {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+  color: #dc3545;
+}
+
+.missile-btn:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.5);
+}
+
+.missile-btn:disabled {
+  background: rgba(108, 117, 125, 0.1);
+  border-color: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+}
+
+.combat-status {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.combat-status h6 {
+  color: #667eea;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.status-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-item {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.2);
+  transition: all 0.2s ease;
+}
+
+.status-item.active {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.2);
+  box-shadow: 0 0 5px rgba(40, 167, 69, 0.2);
+}
+
+.no-equipment {
+  color: #6c757d;
+  font-size: 11px;
+  font-style: italic;
+  text-align: center;
+  padding: 12px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px dashed rgba(108, 117, 125, 0.3);
+}
+
+/* Combat Animation Effects */
+@keyframes pulse {
+  0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+}
+
+.combat-btn.active:not(.missile-btn) {
+  animation: pulse 2s infinite;
+}
+
+@keyframes danger-pulse {
+  0% { box-shadow: 0 0 5px rgba(220, 53, 69, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(220, 53, 69, 0.5); }
+}
+
+.weapon-status.armed {
+  animation: danger-pulse 1.5s infinite;
+}
+
+@keyframes shield-glow {
+  0% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+  50% { box-shadow: 0 0 12px rgba(40, 167, 69, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+}
+
+.shield-status.active {
+  animation: shield-glow 2s infinite;
+}
+
+/* Fleet Component Styles */
+.fleet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.ships-list h3 {
+  color: #667eea;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ships-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.ship-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ship-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ship-card.selected {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.ship-card .ship-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ship-card h4 {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ship-card .status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.ship-card .status.active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.ship-card .status.inactive {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.ship-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .capability-item {
@@ -1794,26 +2099,133 @@
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
+
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
+
+  align-items: center;
+}
+
+.detail-row .label {
+  color: #999999;
+  font-size: 12px;
+
   margin-bottom: 8px;
 }
 
 .detail-row .label {
   color: #666;
+
   font-weight: 500;
 }
 
 .detail-row .value {
-  color: #333;
+
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.detail-row .value.equipment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .detail-row .value.distance {
   color: #007bff;
   font-weight: 500;
+}
+
+.selected-indicator {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0.4));
+  padding: 4px 12px;
+  border-radius: 11px 11px 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ship-details-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.ship-details-panel h3 {
+  color: #667eea;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.detail-section {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.detail-section h4 {
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-content p {
+  color: #ffffff;
+  font-size: 12px;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.detail-content p:last-child {
+  margin-bottom: 0;
+}
+
+.detail-content strong {
+  color: #999999;
+  font-weight: 500;
+}
+
+/* Mobile responsiveness for fleet */
+@media (max-width: 768px) {
+  .ships-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .fleet-content {
+    gap: 20px;
+  }
+  
+  .ship-details-panel {
+    padding: 16px;
+  }
 }
 
 .traits-section,
@@ -2114,5 +2526,6 @@
   
   .quick-scan-buttons {
     grid-template-columns: 1fr;
+
   }
 }
