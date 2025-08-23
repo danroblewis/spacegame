@@ -272,3 +272,48 @@
     justify-content: center;
   }
 }
+
+/* Security Effect Animations */
+.cloak-effect {
+  animation: cloakPulse 3s ease-in-out infinite;
+}
+
+.stealth-effect {
+  animation: stealthFade 2s ease-in-out infinite alternate;
+}
+
+@keyframes cloakPulse {
+  0%, 100% {
+    opacity: 0.3;
+    stroke-width: 1;
+  }
+  50% {
+    opacity: 0.8;
+    stroke-width: 3;
+  }
+}
+
+@keyframes stealthFade {
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+/* Jamming effect animation */
+circle[stroke="#FF9800"] {
+  animation: jammingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes jammingPulse {
+  0%, 100% {
+    opacity: 0.3;
+    stroke-width: 1;
+  }
+  50% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
+}
