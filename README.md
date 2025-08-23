@@ -1,124 +1,72 @@
-# 🎭 Jeremy Roast API 🎭
+# SpaceTraders GUI Frontend
 
-A fun and humorous FastAPI server dedicated to making fun of Jeremy (in good spirits, of course!). This API provides various endpoints to get facts, roasts, and "compliments" about Jeremy's coding adventures.
+A modern, user-friendly graphical user interface for [SpaceTraders.io](https://spacetraders.io/) - the programmable space trading game API.
 
-## 🚀 Quick Start
+## About SpaceTraders
 
-### Prerequisites
-- Python 3.7+
-- pip
+[SpaceTraders](https://spacetraders.io/) is a space-themed economic game that provides HTTP endpoints for automating gameplay and building custom tools. It's designed as a learning platform where developers can:
 
-### Installation
+- **Build and manage fleets** of ships
+- **Explore the galaxy** for hidden secrets
+- **Automate trade routes** using any programming language
+- **Join factions** and compete with other players
+- **Learn new technologies** through practical application
 
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Project Overview
 
-2. Run the server:
-```bash
-python main.py
-```
+This project aims to create an intuitive GUI frontend that makes SpaceTraders accessible to players who prefer visual interfaces over command-line tools or raw API calls. The frontend will provide:
 
-Or using uvicorn directly:
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
+- **Fleet Management Interface** - View and control your ships
+- **Market Dashboard** - Monitor prices and plan trade routes
+- **Navigation Tools** - Visual system and waypoint exploration
+- **Resource Management** - Track cargo, credits, and crew
+- **Real-time Updates** - Live game state monitoring
+- **Automation Controls** - Manage your trading bots and scripts
 
-3. Open your browser and visit:
-   - **Main page**: http://localhost:8000/
-   - **API docs**: http://localhost:8000/docs
-   - **Alternative docs**: http://localhost:8000/redoc
+## Key Features (Planned)
 
-## 🎯 Available Endpoints
+### Core Gameplay
+- Ship fleet overview and management
+- Real-time market data visualization
+- Interactive system and waypoint maps
+- Cargo and resource tracking
+- Crew management and morale monitoring
 
-### 🏠 Root
-- `GET /` - Beautiful HTML welcome page with all endpoint information
+### Trading & Economics
+- Price trend analysis and charts
+- Route optimization tools
+- Automated trading strategy builder
+- Profit/loss tracking and analytics
 
-### 📚 Jeremy Content
-- `GET /jeremy/fact` - Get a random fact about Jeremy's coding adventures
-- `GET /jeremy/roast` - Get a spicy roast about Jeremy
-- `GET /jeremy/compliment` - Get a "compliment" about Jeremy (with a twist)
-- `GET /jeremy/random` - Get random fact, roast, or compliment
+### Exploration & Discovery
+- Interactive galaxy map
+- Waypoint exploration tools
+- Resource extraction monitoring
+- Faction relationship tracking
 
-### 📊 Information
-- `GET /jeremy/stats` - Get statistics about available content
-- `GET /jeremy/search?q=keyword` - Search through Jeremy content
-- `GET /jeremy/health` - Health check with Jeremy humor
+## Technology Stack
 
-### 🎭 Custom Content
-- `POST /jeremy/insult` - Create custom insults (for Jeremy or anyone else)
+*To be determined based on project requirements*
 
-## 🔧 API Examples
+## Getting Started
 
-### Get a Random Jeremy Fact
-```bash
-curl http://localhost:8000/jeremy/fact
-```
+*Development setup instructions will be added as the project progresses*
 
-### Get a Jeremy Roast
-```bash
-curl http://localhost:8000/jeremy/roast
-```
+## Contributing
 
-### Search for Content
-```bash
-curl "http://localhost:8000/jeremy/search?q=debugging"
-```
+This is an open-source project welcoming contributions from the SpaceTraders community. Whether you're a seasoned developer or just learning, your help is appreciated!
 
-### Create Custom Insult
-```bash
-curl -X POST "http://localhost:8000/jeremy/insult" \
-  -H "Content-Type: application/json" \
-  -d '{"target": "Jeremy", "intensity": "intense", "category": "coding"}'
-```
+## Resources
 
-## 🎨 Features
+- [SpaceTraders Official Website](https://spacetraders.io/)
+- [SpaceTraders API Documentation](https://spacetraders.io/docs)
+- [Community Discord](https://discord.gg/spacetraders)
+- [Community Projects](https://spacetraders.io/projects)
 
-- **Beautiful HTML welcome page** with gradient background and styling
-- **Random content generation** for endless entertainment
-- **Search functionality** to find specific Jeremy content
-- **Custom insult generator** with different intensities and categories
-- **Humorous error handling** with Jeremy-themed 404 pages
-- **Interactive API documentation** via Swagger UI
-- **Health check endpoint** with Jeremy humor
+## License
 
-## 😄 Content Categories
+*License information to be added*
 
-### Facts
-Humorous "facts" about Jeremy's coding practices, debugging strategies, and development approach.
+---
 
-### Roasts
-Spicy takes on Jeremy's programming skills, code quality, and development methodology.
-
-### Compliments
-"Compliments" that are actually thinly veiled roasts (all in good fun!).
-
-## ⚠️ Disclaimer
-
-This API is created with love and humor. Jeremy, if you're reading this, we're just kidding! (Mostly...) It's all in good spirits and meant to bring laughter to the development team.
-
-## 🛠️ Development
-
-### Project Structure
-```
-spacegame/
-├── main.py              # Main FastAPI application
-├── requirements.txt     # Python dependencies
-└── README.md           # This file
-```
-
-### Adding New Content
-To add more Jeremy facts, roasts, or compliments, simply edit the arrays in `main.py`:
-- `JEREMY_FACTS`
-- `JEREMY_ROASTS` 
-- `JEREMY_COMPLIMENTS`
-
-### Running Tests
-The server includes built-in error handling and validation. Test different endpoints to see the humorous responses!
-
-## 🌟 Have Fun!
-
-Remember, this is all in good fun! Jeremy, we love you! (Even if your code makes us cry sometimes) 
-
-Enjoy the API and may your debugging sessions be as entertaining as Jeremy's coding adventures! 🎉
+*This project is not affiliated with SpaceTraders.io but is built to enhance the gaming experience for the SpaceTraders community.*
