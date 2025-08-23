@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Map from './Map';
+import ShipModifications from './ShipModifications';
 
 const Fleet = () => {
   const [ships, setShips] = useState([]);
   const [selectedShip, setSelectedShip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showModifications, setShowModifications] = useState(false);
 
   useEffect(() => {
     fetchShips();
@@ -174,9 +176,32 @@ const Fleet = () => {
                     </div>
                   </div>
                 )}
+
+                <div className="ship-actions">
+                  <button 
+                    className="modify-ship-btn"
+                    onClick={() => {
+                      setSelectedShip(ship);
+                      setShowModifications(true);
+                    }}
+                  >
+                    🔧 Modify Ship
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Ship Modifications Modal */}
+      {showModifications && selectedShip && (
+        <div className="modal-overlay">
+          <ShipModifications 
+            selectedShip={selectedShip}
+            onShipUpdate={handleShipUpdate}
+            onClose={() => setShowModifications(false)}
+          />
         </div>
       )}
     </div>
