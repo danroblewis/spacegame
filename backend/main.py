@@ -76,6 +76,16 @@ class Waypoint(BaseModel):
 class NavigateRequest(BaseModel):
     waypointSymbol: str
 
+class ScanResult(BaseModel):
+    shipSymbol: str
+    scanType: str
+    timestamp: str
+    data: dict
+    cooldown: Optional[dict] = None
+
+class SurveyRequest(BaseModel):
+    shipSymbol: str
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -211,6 +221,96 @@ MOCK_FACTIONS = [
             {"name": "Bureaucratic", "description": "Highly organized and bureaucratic"},
             {"name": "Secretive", "description": "Keeps information close to the chest"}
         ]
+    }
+]
+
+# Mock scanning data
+MOCK_SCAN_RESULTS = {
+    "systems": [
+        {
+            "symbol": "X1-DF56",
+            "sectorSymbol": "X1",
+            "type": "RED_STAR",
+            "x": 100,
+            "y": -50,
+            "distance": 150.2
+        },
+        {
+            "symbol": "X1-DF57", 
+            "sectorSymbol": "X1",
+            "type": "NEUTRON_STAR",
+            "x": -75,
+            "y": 120,
+            "distance": 95.8
+        }
+    ],
+    "waypoints": [
+        {
+            "symbol": "X1-DF55-20250C",
+            "type": "PLANET",
+            "systemSymbol": "X1-DF55",
+            "x": 45,
+            "y": -80,
+            "traits": [
+                {"symbol": "VOLCANIC", "name": "Volcanic", "description": "Volcanic activity detected"},
+                {"symbol": "RARE_METAL_DEPOSITS", "name": "Rare Metal Deposits", "description": "Contains valuable minerals"}
+            ]
+        },
+        {
+            "symbol": "X1-DF55-20250D",
+            "type": "ASTEROID_FIELD",
+            "systemSymbol": "X1-DF55", 
+            "x": -120,
+            "y": 60,
+            "traits": [
+                {"symbol": "COMMON_METAL_DEPOSITS", "name": "Common Metal Deposits", "description": "Standard mining resources"},
+                {"symbol": "PRECIOUS_METAL_DEPOSITS", "name": "Precious Metal Deposits", "description": "Valuable precious metals detected"}
+            ]
+        }
+    ],
+    "ships": [
+        {
+            "symbol": "MERCHANT_VESSEL_001",
+            "registration": {"factionSymbol": "COSMIC", "role": "TRADER"},
+            "nav": {"waypointSymbol": "X1-DF55-20250Y", "status": "IN_ORBIT"},
+            "frame": {"symbol": "FRAME_LIGHT_FREIGHTER"},
+            "cargo": {"units": 75, "capacity": 100},
+            "threat_level": "LOW",
+            "distance": 25.5
+        },
+        {
+            "symbol": "PATROL_SHIP_ALPHA",
+            "registration": {"factionSymbol": "GALACTIC_EMPIRE", "role": "PATROL"}, 
+            "nav": {"waypointSymbol": "X1-DF55-20250Z", "status": "IN_TRANSIT"},
+            "frame": {"symbol": "FRAME_INTERCEPTOR"},
+            "cargo": {"units": 10, "capacity": 20},
+            "threat_level": "MEDIUM",
+            "distance": 45.2
+        }
+    ]
+}
+
+MOCK_SURVEYS = [
+    {
+        "signature": "survey_001",
+        "symbol": "X1-DF55-20250Y",
+        "deposits": [
+            {"symbol": "IRON_ORE", "name": "Iron Ore"},
+            {"symbol": "COPPER_ORE", "name": "Copper Ore"},
+            {"symbol": "ALUMINUM_ORE", "name": "Aluminum Ore"}
+        ],
+        "expiration": "2023-11-01T01:00:00.000Z",
+        "size": "LARGE"
+    },
+    {
+        "signature": "survey_002", 
+        "symbol": "X1-DF55-20250B",
+        "deposits": [
+            {"symbol": "PRECIOUS_STONES", "name": "Precious Stones"},
+            {"symbol": "RARE_EARTH_ELEMENTS", "name": "Rare Earth Elements"}
+        ],
+        "expiration": "2023-11-01T02:00:00.000Z",
+        "size": "SMALL"
     }
 ]
 
@@ -441,6 +541,155 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
         
         if response.status_code == 200:
             return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Scanning and Intelligence Endpoints
+
+@app.post("/api/ships/{ship_symbol}/scan/systems")
+async def scan_systems(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Long-range sensors - Detect systems and celestial objects"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 70,
+                    "remainingSeconds": 70,
+                    "expiration": "2023-11-01T00:01:10.000Z"
+                },
+                "systems": MOCK_SCAN_RESULTS["systems"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/systems", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/scan/waypoints")
+async def scan_waypoints(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Planetary survey - Scan waypoints for resources and composition"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 60,
+                    "remainingSeconds": 60,
+                    "expiration": "2023-11-01T00:01:00.000Z"
+                },
+                "waypoints": MOCK_SCAN_RESULTS["waypoints"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/waypoints", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/scan/ships")
+async def scan_ships(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Signal interception and threat assessment - Scan nearby ships"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 10,
+                    "remainingSeconds": 10,
+                    "expiration": "2023-11-01T00:00:10.000Z"
+                },
+                "ships": MOCK_SCAN_RESULTS["ships"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/ships", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/survey")
+async def create_survey(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Resource mapping - Create detailed survey of current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 60,
+                    "remainingSeconds": 60,
+                    "expiration": "2023-11-01T00:01:00.000Z"
+                },
+                "surveys": MOCK_SURVEYS
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/survey", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/cooldown")
+async def get_ship_cooldown(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get current ship cooldown status"""
+    if not HAS_VALID_TOKEN:
+        # Mock response - no cooldown
+        return {
+            "data": {
+                "shipSymbol": ship_symbol,
+                "totalSeconds": 0,
+                "remainingSeconds": 0,
+                "expiration": None
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/cooldown", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            # No cooldown
+            return {
+                "data": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 0,
+                    "remainingSeconds": 0,
+                    "expiration": None
+                }
+            }
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
     except Exception as e:
