@@ -83,6 +83,12 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
   const handleGetRepairCost = () => executeShipAction('Get Repair Cost', 'repair', null, 'GET');
   const handleGetScrapValue = () => executeShipAction('Get Scrap Value', 'scrap', null, 'GET');
 
+  // Scanning functions
+  const handleSystemScan = () => executeShipAction('System Scan', 'scan/systems');
+  const handleWaypointScan = () => executeShipAction('Waypoint Scan', 'scan/waypoints');
+  const handleShipScan = () => executeShipAction('Ship Scan', 'scan/ships');
+  const handleSurvey = () => executeShipAction('Survey', 'survey');
+
   const handleTransfer = () => {
     const targetShip = prompt('Enter target ship symbol:');
     const tradeSymbol = prompt('Enter cargo symbol to transfer:');
@@ -216,6 +222,47 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
                 title={`Repair ship ${getActionRequirement('repair')}`}
               >
                 {loading.Repair ? '🔄' : '🔧'} Repair {getActionRequirement('repair')}
+              </button>
+            </div>
+          </div>
+
+          <div className="action-section">
+            <h4>🔍 Scanning & Intelligence</h4>
+            <div className="action-buttons">
+              <button 
+                onClick={handleSystemScan}
+                disabled={isButtonDisabled('System Scan')}
+                className="action-btn scan-btn systems"
+                title="Long-range sensors - Detect nearby systems and celestial objects"
+              >
+                {loading['System Scan'] ? '🔄' : '🌌'} Long-Range Sensors
+              </button>
+              
+              <button 
+                onClick={handleWaypointScan}
+                disabled={isButtonDisabled('Waypoint Scan')}
+                className="action-btn scan-btn waypoints"
+                title="Planetary survey - Scan waypoints for resources and composition"
+              >
+                {loading['Waypoint Scan'] ? '🔄' : '🪐'} Planetary Survey
+              </button>
+              
+              <button 
+                onClick={handleShipScan}
+                disabled={isButtonDisabled('Ship Scan')}
+                className="action-btn scan-btn ships"
+                title="Signal interception and threat assessment - Scan nearby ships"
+              >
+                {loading['Ship Scan'] ? '🔄' : '📡'} Ship Scanner
+              </button>
+              
+              <button 
+                onClick={handleSurvey}
+                disabled={isButtonDisabled('Survey')}
+                className="action-btn scan-btn survey"
+                title="Resource mapping - Create detailed survey of current waypoint"
+              >
+                {loading['Survey'] ? '🔄' : '⛏️'} Resource Survey
               </button>
             </div>
           </div>
