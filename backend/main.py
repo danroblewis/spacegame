@@ -128,6 +128,31 @@ class TransferCargoRequest(BaseModel):
     units: int
     shipSymbol: str  # Target ship to transfer to
 
+# New models for specialized operations
+class SurveyRequest(BaseModel):
+    pass  # Survey creation doesn't require a body
+
+class ExtractRequest(BaseModel):
+    survey: Optional[dict] = None  # Optional survey data
+
+class SalvageOperationRequest(BaseModel):
+    targetSymbol: str  # Target derelict ship or debris field
+
+class ExplorationRequest(BaseModel):
+    targetSystem: str  # System to explore/chart
+
+class DiplomaticMissionRequest(BaseModel):
+    ambassadorSymbol: str  # Ambassador cargo to transport
+    destinationSymbol: str  # Diplomatic destination
+
+class SearchRescueRequest(BaseModel):
+    searchArea: str  # Area to search for lost ships/crew
+    targetType: str  # "SHIP" or "CREW"
+
+class EscortMissionRequest(BaseModel):
+    protectedVesselSymbol: str  # Ship to protect
+    routeWaypoints: List[str]  # Route waypoints to escort through
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -1026,6 +1051,259 @@ async def transfer_cargo(ship_symbol: str, request: TransferCargoRequest, client
             raise HTTPException(status_code=response.status_code, detail=response.text)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/survey")
+async def create_survey(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Create a survey of extractable resources at current location"""
+    if not HAS_VALID_TOKEN:
+        # Mock survey response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Mock survey data for asteroid field
+        current_waypoint = mock_ship["nav"]["waypointSymbol"]
+        if "20250Y" in current_waypoint:  # Asteroid field
+            mock_survey = {
+                "signature": f"survey-{current_waypoint}-{ship_symbol}",
+                "symbol": current_waypoint,
+                "deposits": [
+                    {"symbol": "IRON_ORE"},
+                    {"symbol": "COPPER_ORE"},
+                    {"symbol": "PRECIOUS_STONES"}
+                ],
+                "expiration": "2024-01-01T12:00:00Z",
+                "size": "MODERATE"
+            }
+            return {
+                "data": {
+                    "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 60, "remainingSeconds": 60},
+                    "surveys": [mock_survey]
+                }
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Cannot survey at this location")
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/survey", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/extract")
+async def extract_resources(ship_symbol: str, request: ExtractRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Extract resources from current location"""
+    if not HAS_VALID_TOKEN:
+        # Mock extraction response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        current_waypoint = mock_ship["nav"]["waypointSymbol"]
+        if "20250Y" in current_waypoint:  # Asteroid field
+            extracted_resource = "IRON_ORE"
+            extracted_units = 5
+            
+            # Add to ship cargo
+            cargo_item = next((item for item in mock_ship["cargo"]["inventory"] if item["symbol"] == extracted_resource), None)
+            if cargo_item:
+                cargo_item["units"] += extracted_units
+            else:
+                mock_ship["cargo"]["inventory"].append({"symbol": extracted_resource, "units": extracted_units})
+            
+            mock_ship["cargo"]["units"] += extracted_units
+            
+            return {
+                "data": {
+                    "extraction": {
+                        "shipSymbol": ship_symbol,
+                        "yield": {"symbol": extracted_resource, "units": extracted_units}
+                    },
+                    "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 90, "remainingSeconds": 90},
+                    "cargo": mock_ship["cargo"],
+                    "events": []
+                }
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Cannot extract resources at this location")
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {}
+        if request.survey:
+            payload["survey"] = request.survey
+        
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/extract", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/salvage")
+async def salvage_operation(ship_symbol: str, request: SalvageOperationRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Perform salvage operation on derelict ships or debris"""
+    if not HAS_VALID_TOKEN:
+        # Mock salvage response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Mock salvage results
+        salvaged_items = [
+            {"symbol": "SCRAP_METAL", "units": 10},
+            {"symbol": "ADVANCED_CIRCUITRY", "units": 2}
+        ]
+        
+        for item in salvaged_items:
+            cargo_item = next((c for c in mock_ship["cargo"]["inventory"] if c["symbol"] == item["symbol"]), None)
+            if cargo_item:
+                cargo_item["units"] += item["units"]
+            else:
+                mock_ship["cargo"]["inventory"].append(item)
+        
+        mock_ship["cargo"]["units"] += sum(item["units"] for item in salvaged_items)
+        
+        return {
+            "data": {
+                "salvage": {"shipSymbol": ship_symbol, "items": salvaged_items},
+                "cargo": mock_ship["cargo"],
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 120, "remainingSeconds": 120}
+            }
+        }
+    
+    # For real API, this would be a custom operation not directly supported by SpaceTraders
+    # We'd need to implement it using existing endpoints or wait for official support
+    raise HTTPException(status_code=501, detail="Salvage operations not yet implemented with real API")
+
+@app.post("/api/ships/{ship_symbol}/explore")
+async def exploration_mission(ship_symbol: str, request: ExplorationRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Perform exploration/charting of unknown systems"""
+    if not HAS_VALID_TOKEN:
+        # Mock exploration response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Mock exploration results - discovering new waypoints/systems
+        exploration_results = {
+            "systemSymbol": request.targetSystem,
+            "newWaypoints": [
+                {"symbol": f"{request.targetSystem}-NEW1", "type": "ASTEROID_FIELD", "x": 100, "y": 50},
+                {"symbol": f"{request.targetSystem}-NEW2", "type": "PLANET", "x": -80, "y": 120}
+            ],
+            "chartingProgress": 75  # Percentage of system charted
+        }
+        
+        return {
+            "data": {
+                "exploration": exploration_results,
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 180, "remainingSeconds": 180}
+            }
+        }
+    
+    raise HTTPException(status_code=501, detail="Exploration missions not yet implemented with real API")
+
+@app.post("/api/ships/{ship_symbol}/diplomatic-mission")
+async def diplomatic_mission(ship_symbol: str, request: DiplomaticMissionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Transport ambassadors or perform diplomatic missions"""
+    if not HAS_VALID_TOKEN:
+        # Mock diplomatic mission response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Check if ship has the ambassador cargo
+        ambassador_cargo = next((item for item in mock_ship["cargo"]["inventory"] 
+                               if item["symbol"] == request.ambassadorSymbol), None)
+        if not ambassador_cargo:
+            raise HTTPException(status_code=400, detail="Ambassador not found in cargo")
+        
+        return {
+            "data": {
+                "mission": {
+                    "type": "DIPLOMATIC",
+                    "ambassador": request.ambassadorSymbol,
+                    "destination": request.destinationSymbol,
+                    "status": "IN_PROGRESS",
+                    "diplomatic_bonus": 1000  # Credits reward
+                },
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 300, "remainingSeconds": 300}
+            }
+        }
+    
+    raise HTTPException(status_code=501, detail="Diplomatic missions not yet implemented with real API")
+
+@app.post("/api/ships/{ship_symbol}/search-rescue")
+async def search_rescue_mission(ship_symbol: str, request: SearchRescueRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Search for lost ships or rescue crew members"""
+    if not HAS_VALID_TOKEN:
+        # Mock search and rescue response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        # Mock search results
+        import random
+        success = random.random() > 0.3  # 70% chance of finding something
+        
+        if success:
+            if request.targetType == "SHIP":
+                result = {
+                    "found": "DERELICT_SHIP",
+                    "location": request.searchArea,
+                    "salvage_value": 5000,
+                    "rescue_bonus": 2000
+                }
+            else:  # CREW
+                result = {
+                    "found": "CREW_POD",
+                    "survivors": 3,
+                    "rescue_bonus": 1500
+                }
+        else:
+            result = {"found": None, "search_exhausted": True}
+        
+        return {
+            "data": {
+                "search_rescue": result,
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 240, "remainingSeconds": 240}
+            }
+        }
+    
+    raise HTTPException(status_code=501, detail="Search and rescue missions not yet implemented with real API")
+
+@app.post("/api/ships/{ship_symbol}/escort")
+async def escort_mission(ship_symbol: str, request: EscortMissionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Escort other vessels through dangerous routes"""
+    if not HAS_VALID_TOKEN:
+        # Mock escort mission response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "escort": {
+                    "protectedVessel": request.protectedVesselSymbol,
+                    "route": request.routeWaypoints,
+                    "status": "ESCORTING",
+                    "currentWaypoint": 0,
+                    "escort_fee": 3000  # Credits reward
+                },
+                "cooldown": {"shipSymbol": ship_symbol, "totalSeconds": 60, "remainingSeconds": 60}
+            }
+        }
+    
+    raise HTTPException(status_code=501, detail="Escort missions not yet implemented with real API")
 
 if __name__ == "__main__":
     import uvicorn
