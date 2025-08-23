@@ -62,6 +62,20 @@ class System(BaseModel):
     waypoints: List[dict]
     factions: List[dict]
 
+class Waypoint(BaseModel):
+    symbol: str
+    type: str
+    systemSymbol: str
+    x: int
+    y: int
+    orbitals: List[dict] = []
+    traits: List[dict] = []
+    chart: Optional[dict] = None
+    faction: Optional[dict] = None
+
+class NavigateRequest(BaseModel):
+    waypointSymbol: str
+
 # Mock data for testing
 MOCK_AGENT = {
     "symbol": "DEMO_AGENT",
@@ -74,7 +88,29 @@ MOCK_SHIPS = [
     {
         "symbol": "DEMO_SHIP_1",
         "registration": {"name": "Explorer One", "role": "EXPLORER"},
-        "nav": {"status": "IN_ORBIT", "waypointSymbol": "X1-DF55-20250X"},
+        "nav": {
+            "status": "IN_ORBIT", 
+            "waypointSymbol": "X1-DF55-20250X",
+            "systemSymbol": "X1-DF55",
+            "route": {
+                "destination": {
+                    "symbol": "X1-DF55-20250X",
+                    "type": "PLANET",
+                    "systemSymbol": "X1-DF55",
+                    "x": -42,
+                    "y": -26
+                },
+                "origin": {
+                    "symbol": "X1-DF55-20250X",
+                    "type": "PLANET",
+                    "systemSymbol": "X1-DF55",
+                    "x": -42,
+                    "y": -26
+                },
+                "departureTime": "2023-11-01T00:00:00.000Z",
+                "arrival": "2023-11-01T00:00:00.000Z"
+            }
+        },
         "crew": {"current": 2, "capacity": 4},
         "frame": {"name": "Explorer Frame"},
         "reactor": {"name": "Basic Reactor"},
@@ -93,10 +129,74 @@ MOCK_SYSTEMS = [
         "x": 0,
         "y": 0,
         "waypoints": [
-            {"symbol": "X1-DF55-20250X", "type": "PLANET"},
-            {"symbol": "X1-DF55-20250Y", "type": "ASTEROID_FIELD"}
+            {"symbol": "X1-DF55-20250X", "type": "PLANET", "x": -42, "y": -26},
+            {"symbol": "X1-DF55-20250Y", "type": "ASTEROID_FIELD", "x": 18, "y": -175},
+            {"symbol": "X1-DF55-20250Z", "type": "JUMP_GATE", "x": 48, "y": 12},
+            {"symbol": "X1-DF55-20250A", "type": "GAS_GIANT", "x": -85, "y": 92},
+            {"symbol": "X1-DF55-20250B", "type": "MOON", "x": -38, "y": -15}
         ],
         "factions": [{"symbol": "COSMIC"}]
+    }
+]
+
+MOCK_WAYPOINTS = [
+    {
+        "symbol": "X1-DF55-20250X",
+        "type": "PLANET",
+        "systemSymbol": "X1-DF55",
+        "x": -42,
+        "y": -26,
+        "orbitals": [{"symbol": "X1-DF55-20250B"}],
+        "traits": [
+            {"symbol": "MARKETPLACE", "name": "Marketplace", "description": "A thriving marketplace where goods and services are traded."},
+            {"symbol": "SHIPYARD", "name": "Shipyard", "description": "A facility where ships are constructed, repaired, and outfitted."}
+        ],
+        "faction": {"symbol": "COSMIC"}
+    },
+    {
+        "symbol": "X1-DF55-20250Y",
+        "type": "ASTEROID_FIELD",
+        "systemSymbol": "X1-DF55",
+        "x": 18,
+        "y": -175,
+        "orbitals": [],
+        "traits": [
+            {"symbol": "COMMON_METAL_DEPOSITS", "name": "Common Metal Deposits", "description": "Large deposits of common metals."},
+            {"symbol": "RARE_METAL_DEPOSITS", "name": "Rare Metal Deposits", "description": "Rare metal deposits."}
+        ]
+    },
+    {
+        "symbol": "X1-DF55-20250Z",
+        "type": "JUMP_GATE",
+        "systemSymbol": "X1-DF55",
+        "x": 48,
+        "y": 12,
+        "orbitals": [],
+        "traits": [
+            {"symbol": "UNCHARTED", "name": "Uncharted", "description": "An uncharted waypoint."}
+        ]
+    },
+    {
+        "symbol": "X1-DF55-20250A",
+        "type": "GAS_GIANT",
+        "systemSymbol": "X1-DF55",
+        "x": -85,
+        "y": 92,
+        "orbitals": [],
+        "traits": [
+            {"symbol": "FROZEN", "name": "Frozen", "description": "A cold, frozen world."}
+        ]
+    },
+    {
+        "symbol": "X1-DF55-20250B",
+        "type": "MOON",
+        "systemSymbol": "X1-DF55",
+        "x": -38,
+        "y": -15,
+        "orbitals": [],
+        "traits": [
+            {"symbol": "MINERAL_DEPOSITS", "name": "Mineral Deposits", "description": "Natural mineral deposits."}
+        ]
     }
 ]
 
@@ -211,6 +311,140 @@ async def get_info():
         "api_url": SPACETRADERS_API_URL,
         "message": "Use demo data" if not HAS_VALID_TOKEN else "Using real SpaceTraders API"
     }
+
+@app.get("/api/systems/{system_symbol}/waypoints", response_model=List[Waypoint])
+async def get_system_waypoints(system_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get all waypoints in a system"""
+    if not HAS_VALID_TOKEN:
+        # Return mock waypoints for the demo system
+        if system_symbol == "X1-DF55":
+            return MOCK_WAYPOINTS
+        else:
+            return []
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/systems/{system_symbol}/waypoints", headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data["data"]
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/systems/{system_symbol}", response_model=System)
+async def get_system(system_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get system details"""
+    if not HAS_VALID_TOKEN:
+        # Return mock system for demo
+        if system_symbol == "X1-DF55":
+            return MOCK_SYSTEMS[0]
+        else:
+            raise HTTPException(status_code=404, detail="System not found")
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/systems/{system_symbol}", headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data["data"]
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/navigate")
+async def navigate_ship(ship_symbol: str, request: NavigateRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Navigate ship to a waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock navigation response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        target_waypoint = next((wp for wp in MOCK_WAYPOINTS if wp["symbol"] == request.waypointSymbol), None)
+        if not target_waypoint:
+            raise HTTPException(status_code=404, detail="Waypoint not found")
+        
+        # Update mock ship navigation
+        mock_ship["nav"]["waypointSymbol"] = request.waypointSymbol
+        mock_ship["nav"]["status"] = "IN_TRANSIT"
+        mock_ship["nav"]["route"]["destination"] = {
+            "symbol": target_waypoint["symbol"],
+            "type": target_waypoint["type"],
+            "systemSymbol": target_waypoint["systemSymbol"],
+            "x": target_waypoint["x"],
+            "y": target_waypoint["y"]
+        }
+        
+        return {
+            "data": {
+                "fuel": {"current": 48, "capacity": 100, "consumed": {"amount": 2, "timestamp": "2023-11-01T00:00:00.000Z"}},
+                "nav": mock_ship["nav"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        payload = {"waypointSymbol": request.waypointSymbol}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/navigate", 
+                                   json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/dock")
+async def dock_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Dock ship at current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock dock response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        mock_ship["nav"]["status"] = "DOCKED"
+        return {"data": {"nav": mock_ship["nav"]}}
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/dock", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/orbit")
+async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Put ship in orbit around current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock orbit response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        mock_ship["nav"]["status"] = "IN_ORBIT"
+        return {"data": {"nav": mock_ship["nav"]}}
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/orbit", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
