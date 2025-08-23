@@ -1391,3 +1391,684 @@
     overflow-y: auto;
   }
 }
+
+/* Scanning and Intelligence Styles */
+.intelligence {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ship-selector {
+  margin-top: 15px;
+}
+
+.ship-selector label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.ship-selector select {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.intelligence-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+  border-bottom: 2px solid #eee;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.tab-btn.active {
+  background: #007bff;
+  color: white;
+}
+
+.tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.intelligence-content {
+  min-height: 400px;
+  padding: 20px 0;
+}
+
+/* Overview Styles */
+.intelligence-overview {
+  padding: 20px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.overview-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.overview-card h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 10px;
+}
+
+.capabilities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.capability-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.capability-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.capability-item strong {
+  display: block;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.capability-item p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.recent-scans {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recent-scan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.scan-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.scan-info strong {
+  display: block;
+  color: #333;
+}
+
+.scan-info p {
+  margin: 0;
+  color: #666;
+  font-size: 12px;
+}
+
+.no-scans {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.scanner-controls {
+  padding: 15px;
+}
+
+.selected-ship-display {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.selected-ship-display strong {
+  display: block;
+  color: #007bff;
+  margin-bottom: 5px;
+}
+
+.selected-ship-display p {
+  margin: 2px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.quick-scan-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.quick-scan-btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.quick-scan-btn.systems {
+  background: #6f42c1;
+  color: white;
+}
+
+.quick-scan-btn.systems:hover {
+  background: #5a2d91;
+}
+
+.quick-scan-btn.waypoints {
+  background: #28a745;
+  color: white;
+}
+
+.quick-scan-btn.waypoints:hover {
+  background: #1e7e34;
+}
+
+.quick-scan-btn.ships {
+  background: #dc3545;
+  color: white;
+}
+
+.quick-scan-btn.ships:hover {
+  background: #c82333;
+}
+
+.quick-scan-btn.survey {
+  background: #fd7e14;
+  color: white;
+}
+
+.quick-scan-btn.survey:hover {
+  background: #e55100;
+}
+
+/* Scan Results Styles */
+.scan-results-container {
+  padding: 20px;
+}
+
+.scan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.scan-timestamp {
+  font-weight: bold;
+  color: #333;
+}
+
+.cooldown-info {
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.scan-results h3 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.scan-subtitle {
+  color: #666;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.systems-grid,
+.waypoints-grid,
+.ships-grid,
+.surveys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.scan-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.system-header,
+.waypoint-header,
+.ship-header,
+.survey-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.system-header h4,
+.waypoint-header h4,
+.ship-header h4,
+.survey-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+.system-type,
+.waypoint-type {
+  background: #6f42c1;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ship-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ship-role {
+  background: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.threat-level {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.survey-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.survey-size {
+  background: #fd7e14;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.detail-row .label {
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-row .value {
+  color: #333;
+}
+
+.detail-row .value.distance {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.traits-section,
+.deposits-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.traits-section h5,
+.deposits-section h5 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.traits-grid,
+.deposits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.trait-item,
+.deposit-item {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #007bff;
+}
+
+.trait-name,
+.deposit-symbol {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  font-size: 12px;
+}
+
+.trait-description,
+.deposit-name {
+  display: block;
+  color: #666;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.no-data,
+.no-scan-data {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 40px 20px;
+}
+
+.no-scan-data h3 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+/* Ship Actions Sidebar Updates */
+.ship-actions-sidebar {
+  position: fixed;
+  right: 0;
+  top: 80px;
+  height: calc(100vh - 80px);
+  width: 350px;
+  background: white;
+  border-left: 1px solid #ddd;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.ship-actions-sidebar.collapsed {
+  transform: translateX(320px);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.collapse-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapse-btn:hover {
+  background: #0056b3;
+}
+
+.sidebar-content {
+  padding: 20px;
+}
+
+.selected-ship-info {
+  background: #e3f2fd;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2196f3;
+}
+
+.selected-ship-info h4 {
+  margin: 0 0 8px 0;
+  color: #1976d2;
+}
+
+.selected-ship-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.selected-ship-info .status {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.selected-ship-info .status.in_orbit {
+  color: #4caf50;
+}
+
+.selected-ship-info .status.docked {
+  color: #ff9800;
+}
+
+.selected-ship-info .status.in_transit {
+  color: #2196f3;
+}
+
+.action-section {
+  margin-bottom: 25px;
+}
+
+.action-section h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eee;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scan-btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scan-btn.systems {
+  background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+  color: white;
+}
+
+.scan-btn.systems:not(:disabled):hover {
+  background: linear-gradient(135deg, #5a2d91 0%, #4c236c 100%);
+  transform: translateY(-1px);
+}
+
+.scan-btn.waypoints {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  color: white;
+}
+
+.scan-btn.waypoints:not(:disabled):hover {
+  background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+  transform: translateY(-1px);
+}
+
+.scan-btn.ships {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+}
+
+.scan-btn.ships:not(:disabled):hover {
+  background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+  transform: translateY(-1px);
+}
+
+.scan-btn.survey {
+  background: linear-gradient(135deg, #fd7e14 0%, #e55100 100%);
+  color: white;
+}
+
+.scan-btn.survey:not(:disabled):hover {
+  background: linear-gradient(135deg, #e55100 0%, #cc4400 100%);
+  transform: translateY(-1px);
+}
+
+.action-buttons-placeholder {
+  background: #f8f9fa;
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+}
+
+.placeholder-text {
+  color: #666;
+  font-style: italic;
+}
+
+/* Main content adjustment for sidebar */
+.main-content {
+  padding-right: 370px;
+  transition: padding-right 0.3s ease;
+}
+
+.ship-actions-sidebar.collapsed ~ .main-content {
+  padding-right: 50px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .main-content {
+    padding-right: 20px;
+  }
+  
+  .ship-actions-sidebar {
+    width: 300px;
+  }
+  
+  .ship-actions-sidebar.collapsed {
+    transform: translateX(270px);
+  }
+}
+
+@media (max-width: 768px) {
+  .ship-actions-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+  
+  .ship-actions-sidebar.collapsed {
+    height: 60px;
+    overflow: hidden;
+  }
+  
+  .main-content {
+    padding-right: 20px;
+  }
+  
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .systems-grid,
+  .waypoints-grid,
+  .ships-grid,
+  .surveys-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .intelligence-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .quick-scan-buttons {
+    grid-template-columns: 1fr;
+  }
+}
