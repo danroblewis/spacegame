@@ -41,6 +41,50 @@ class Agent(BaseModel):
     credits: int
     startingFaction: str
 
+class CrewMember(BaseModel):
+    id: str
+    name: str
+    role: str  # PILOT, ENGINEER, GUNNER, MEDIC, SECURITY, MINER, etc.
+    level: int
+    experience: int
+    skills: dict  # {"piloting": 75, "engineering": 60, "combat": 45}
+    health: int  # 0-100
+    morale: int  # 0-100
+    salary: int  # Credits per day
+    hired_date: str
+    status: str  # ACTIVE, INJURED, RESTING, TRAINING
+
+class CrewQuarters(BaseModel):
+    capacity: int
+    comfort_level: int  # 1-5, affects morale
+    facilities: List[str]  # ["recreation_room", "private_cabins", "gym"]
+    maintenance_cost: int  # Credits per day
+
+class MedicalBay(BaseModel):
+    level: int  # 1-5, affects treatment effectiveness
+    capacity: int  # Number of patients that can be treated simultaneously
+    equipment: List[str]  # ["basic_med_kit", "surgery_suite", "bio_scanner"]
+    treatment_cost: int  # Credits per treatment
+
+class CrewTrainingFacility(BaseModel):
+    level: int  # 1-5, affects training effectiveness
+    programs: List[str]  # ["pilot_training", "engineering_course", "combat_drill"]
+    training_cost: int  # Credits per training session
+
+class HireCrewRequest(BaseModel):
+    role: str
+    max_salary: int
+
+class TrainCrewRequest(BaseModel):
+    skill: str
+    duration_hours: int
+
+class AssignRoleRequest(BaseModel):
+    new_role: str
+
+class TreatCrewRequest(BaseModel):
+    crew_ids: List[str]
+
 class Ship(BaseModel):
     symbol: str
     registration: dict
@@ -83,6 +127,98 @@ MOCK_AGENT = {
     "credits": 1000000,
     "startingFaction": "COSMIC"
 }
+
+MOCK_CREW_MEMBERS = {
+    "DEMO_SHIP_1": [
+        {
+            "id": "crew_001",
+            "name": "Captain Sarah Chen",
+            "role": "PILOT",
+            "level": 5,
+            "experience": 2500,
+            "skills": {"piloting": 85, "leadership": 90, "navigation": 80},
+            "health": 95,
+            "morale": 85,
+            "salary": 150,
+            "hired_date": "2023-10-01T00:00:00.000Z",
+            "status": "ACTIVE"
+        },
+        {
+            "id": "crew_002",
+            "name": "Engineer Marcus Rodriguez",
+            "role": "ENGINEER",
+            "level": 4,
+            "experience": 1800,
+            "skills": {"engineering": 88, "repair": 85, "systems": 75},
+            "health": 100,
+            "morale": 90,
+            "salary": 120,
+            "hired_date": "2023-10-01T00:00:00.000Z",
+            "status": "ACTIVE"
+        }
+    ]
+}
+
+MOCK_CREW_QUARTERS = {
+    "DEMO_SHIP_1": {
+        "capacity": 4,
+        "comfort_level": 3,
+        "facilities": ["recreation_room", "private_cabins"],
+        "maintenance_cost": 50
+    }
+}
+
+MOCK_MEDICAL_BAY = {
+    "DEMO_SHIP_1": {
+        "level": 2,
+        "capacity": 2,
+        "equipment": ["basic_med_kit", "bio_scanner"],
+        "treatment_cost": 100
+    }
+}
+
+MOCK_TRAINING_FACILITY = {
+    "DEMO_SHIP_1": {
+        "level": 2,
+        "programs": ["pilot_training", "engineering_course"],
+        "training_cost": 200
+    }
+}
+
+MOCK_AVAILABLE_CREW = [
+    {
+        "id": "hire_001",
+        "name": "Alex Thompson",
+        "role": "GUNNER",
+        "level": 2,
+        "skills": {"combat": 70, "weapons": 75, "tactics": 60},
+        "salary": 100
+    },
+    {
+        "id": "hire_002",
+        "name": "Dr. Elena Vasquez",
+        "role": "MEDIC",
+        "level": 3,
+        "skills": {"medicine": 85, "surgery": 80, "biology": 70},
+        "salary": 130
+    },
+    {
+        "id": "hire_003",
+        "name": "Jake Morrison",
+        "role": "MINER",
+        "level": 3,
+        "skills": {"mining": 80, "geology": 75, "equipment": 70},
+        "salary": 110
+    },
+    {
+        "id": "hire_004",
+        "name": "Security Chief Rivera",
+        "role": "SECURITY",
+        "level": 4,
+        "skills": {"security": 90, "combat": 85, "investigation": 75},
+        "salary": 140
+    }
+]
 
 MOCK_SHIPS = [
     {
@@ -218,6 +354,238 @@ MOCK_FACTIONS = [
 @app.get("/")
 async def root():
     return {"message": "SpaceTraders GUI Backend API"}
+
+# Crew Management Endpoints
+@app.get("/api/ships/{ship_symbol}/crew", response_model=List[CrewMember])
+async def get_ship_crew(ship_symbol: str):
+    """Get crew roster for a specific ship"""
+    if not HAS_VALID_TOKEN:
+        return MOCK_CREW_MEMBERS.get(ship_symbol, [])
+    
+    # TODO: Implement real SpaceTraders API call when available
+    return MOCK_CREW_MEMBERS.get(ship_symbol, [])
+
+@app.get("/api/ships/{ship_symbol}/crew/available")
+async def get_available_crew(ship_symbol: str):
+    """Get available crew members for hire"""
+    if not HAS_VALID_TOKEN:
+        return MOCK_AVAILABLE_CREW
+    
+    # TODO: Implement real SpaceTraders API call when available
+    return MOCK_AVAILABLE_CREW
+
+@app.post("/api/ships/{ship_symbol}/crew/hire")
+async def hire_crew(ship_symbol: str, request: HireCrewRequest):
+    """Hire a new crew member"""
+    if not HAS_VALID_TOKEN:
+        # Find available crew member matching the role
+        available_crew = [crew for crew in MOCK_AVAILABLE_CREW 
+                         if crew["role"] == request.role and crew["salary"] <= request.max_salary]
+        
+        if not available_crew:
+            raise HTTPException(status_code=404, detail="No suitable crew member found")
+        
+        # Select the first suitable crew member
+        hired_crew = available_crew[0].copy()
+        hired_crew["id"] = f"crew_{len(MOCK_CREW_MEMBERS.get(ship_symbol, [])) + 1:03d}"
+        hired_crew["experience"] = 0
+        hired_crew["health"] = 100
+        hired_crew["morale"] = 80
+        hired_crew["hired_date"] = "2023-11-01T00:00:00.000Z"
+        hired_crew["status"] = "ACTIVE"
+        
+        # Add to ship's crew
+        if ship_symbol not in MOCK_CREW_MEMBERS:
+            MOCK_CREW_MEMBERS[ship_symbol] = []
+        MOCK_CREW_MEMBERS[ship_symbol].append(hired_crew)
+        
+        # Update ship crew count
+        for ship in MOCK_SHIPS:
+            if ship["symbol"] == ship_symbol:
+                ship["crew"]["current"] += 1
+                break
+        
+        return {"data": hired_crew, "message": f"Successfully hired {hired_crew['name']}"}
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
+
+@app.delete("/api/ships/{ship_symbol}/crew/{crew_id}")
+async def fire_crew(ship_symbol: str, crew_id: str):
+    """Fire a crew member"""
+    if not HAS_VALID_TOKEN:
+        ship_crew = MOCK_CREW_MEMBERS.get(ship_symbol, [])
+        crew_member = next((crew for crew in ship_crew if crew["id"] == crew_id), None)
+        
+        if not crew_member:
+            raise HTTPException(status_code=404, detail="Crew member not found")
+        
+        # Remove from ship's crew
+        MOCK_CREW_MEMBERS[ship_symbol] = [crew for crew in ship_crew if crew["id"] != crew_id]
+        
+        # Update ship crew count
+        for ship in MOCK_SHIPS:
+            if ship["symbol"] == ship_symbol:
+                ship["crew"]["current"] -= 1
+                break
+        
+        return {"data": crew_member, "message": f"Successfully fired {crew_member['name']}"}
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
+
+@app.put("/api/ships/{ship_symbol}/crew/{crew_id}/train")
+async def train_crew(ship_symbol: str, crew_id: str, request: TrainCrewRequest):
+    """Train a crew member to improve their skills"""
+    if not HAS_VALID_TOKEN:
+        ship_crew = MOCK_CREW_MEMBERS.get(ship_symbol, [])
+        crew_member = next((crew for crew in ship_crew if crew["id"] == crew_id), None)
+        
+        if not crew_member:
+            raise HTTPException(status_code=404, detail="Crew member not found")
+        
+        if crew_member["status"] != "ACTIVE":
+            raise HTTPException(status_code=400, detail="Crew member is not available for training")
+        
+        # Improve skill based on training
+        skill_improvement = min(10, request.duration_hours // 2)  # 5 points per hour
+        current_skill = crew_member["skills"].get(request.skill, 0)
+        new_skill_level = min(100, current_skill + skill_improvement)
+        
+        crew_member["skills"][request.skill] = new_skill_level
+        crew_member["experience"] += request.duration_hours * 10
+        crew_member["status"] = "TRAINING"
+        
+        # Calculate new level based on experience
+        new_level = min(10, crew_member["experience"] // 500 + 1)
+        crew_member["level"] = new_level
+        
+        return {
+            "data": crew_member,
+            "message": f"Training completed. {request.skill} improved to {new_skill_level}"
+        }
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
+
+@app.put("/api/ships/{ship_symbol}/crew/{crew_id}/assign")
+async def assign_crew_role(ship_symbol: str, crew_id: str, request: AssignRoleRequest):
+    """Assign a new role to a crew member"""
+    if not HAS_VALID_TOKEN:
+        ship_crew = MOCK_CREW_MEMBERS.get(ship_symbol, [])
+        crew_member = next((crew for crew in ship_crew if crew["id"] == crew_id), None)
+        
+        if not crew_member:
+            raise HTTPException(status_code=404, detail="Crew member not found")
+        
+        old_role = crew_member["role"]
+        crew_member["role"] = request.new_role
+        
+        return {
+            "data": crew_member,
+            "message": f"Successfully reassigned {crew_member['name']} from {old_role} to {request.new_role}"
+        }
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
+
+@app.get("/api/ships/{ship_symbol}/crew/quarters", response_model=CrewQuarters)
+async def get_crew_quarters(ship_symbol: str):
+    """Get crew quarters information"""
+    if not HAS_VALID_TOKEN:
+        quarters = MOCK_CREW_QUARTERS.get(ship_symbol)
+        if not quarters:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        return quarters
+    
+    # TODO: Implement real SpaceTraders API call when available
+    return MOCK_CREW_QUARTERS.get(ship_symbol, {})
+
+@app.put("/api/ships/{ship_symbol}/crew/quarters")
+async def upgrade_crew_quarters(ship_symbol: str):
+    """Upgrade crew quarters to improve comfort and morale"""
+    if not HAS_VALID_TOKEN:
+        quarters = MOCK_CREW_QUARTERS.get(ship_symbol)
+        if not quarters:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        if quarters["comfort_level"] >= 5:
+            raise HTTPException(status_code=400, detail="Quarters already at maximum level")
+        
+        # Upgrade quarters
+        quarters["comfort_level"] += 1
+        quarters["maintenance_cost"] += 25
+        
+        # Add new facilities
+        new_facilities = {
+            2: "private_cabins",
+            3: "recreation_room", 
+            4: "gym",
+            5: "luxury_suites"
+        }
+        
+        new_facility = new_facilities.get(quarters["comfort_level"])
+        if new_facility and new_facility not in quarters["facilities"]:
+            quarters["facilities"].append(new_facility)
+        
+        # Improve crew morale
+        ship_crew = MOCK_CREW_MEMBERS.get(ship_symbol, [])
+        for crew_member in ship_crew:
+            crew_member["morale"] = min(100, crew_member["morale"] + 10)
+        
+        return {
+            "data": quarters,
+            "message": f"Quarters upgraded to level {quarters['comfort_level']}"
+        }
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
+
+@app.get("/api/ships/{ship_symbol}/crew/medical", response_model=MedicalBay)
+async def get_medical_bay(ship_symbol: str):
+    """Get medical bay information"""
+    if not HAS_VALID_TOKEN:
+        medical_bay = MOCK_MEDICAL_BAY.get(ship_symbol)
+        if not medical_bay:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        return medical_bay
+    
+    # TODO: Implement real SpaceTraders API call when available
+    return MOCK_MEDICAL_BAY.get(ship_symbol, {})
+
+@app.post("/api/ships/{ship_symbol}/crew/medical/treat")
+async def treat_injured_crew(ship_symbol: str, request: TreatCrewRequest):
+    """Treat injured crew members in the medical bay"""
+    if not HAS_VALID_TOKEN:
+        ship_crew = MOCK_CREW_MEMBERS.get(ship_symbol, [])
+        medical_bay = MOCK_MEDICAL_BAY.get(ship_symbol)
+        
+        if not medical_bay:
+            raise HTTPException(status_code=404, detail="Medical bay not found")
+        
+        treated_crew = []
+        for crew_id in request.crew_ids:
+            crew_member = next((crew for crew in ship_crew if crew["id"] == crew_id), None)
+            if crew_member and crew_member["health"] < 100:
+                # Heal the crew member
+                health_improvement = min(50, 100 - crew_member["health"])
+                crew_member["health"] += health_improvement
+                crew_member["status"] = "ACTIVE" if crew_member["health"] >= 90 else "RESTING"
+                treated_crew.append(crew_member)
+        
+        if not treated_crew:
+            raise HTTPException(status_code=400, detail="No crew members need treatment")
+        
+        total_cost = len(treated_crew) * medical_bay["treatment_cost"]
+        
+        return {
+            "data": treated_crew,
+            "cost": total_cost,
+            "message": f"Successfully treated {len(treated_crew)} crew members"
+        }
+    
+    # TODO: Implement real SpaceTraders API call when available
+    raise HTTPException(status_code=501, detail="Not implemented for real API yet")
 
 @app.get("/api/status")
 async def get_status():
