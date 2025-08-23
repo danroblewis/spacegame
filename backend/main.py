@@ -214,6 +214,68 @@ MOCK_FACTIONS = [
     }
 ]
 
+# Resource Management Models
+class ResourceData(BaseModel):
+    fuel: dict
+    power: dict
+    heat: dict
+    life_support: dict
+    waste: dict
+    emergency: dict
+
+class ResourceAction(BaseModel):
+    action: str
+    parameters: dict = {}
+
+# Mock resource data generator
+def generate_mock_resource_data(ship_symbol: str):
+    import random
+    return {
+        "fuel": {
+            "current": random.randint(70, 100),
+            "capacity": 100,
+            "efficiency": random.randint(85, 98),
+            "consumption_rate": round(random.uniform(0.8, 1.5), 1)
+        },
+        "power": {
+            "current": random.randint(75, 95),
+            "capacity": 100,
+            "distribution": {
+                "engines": random.randint(30, 40),
+                "life_support": random.randint(20, 30),
+                "systems": random.randint(15, 25),
+                "shields": random.randint(10, 20)
+            }
+        },
+        "heat": {
+            "current": random.randint(30, 60),
+            "max_safe": 80,
+            "dissipation_rate": round(random.uniform(1.8, 2.5), 1),
+            "thermal_vents": random.randint(3, 6)
+        },
+        "life_support": {
+            "oxygen": random.randint(90, 100),
+            "temperature": random.randint(20, 24),
+            "humidity": random.randint(40, 55),
+            "crew_comfort": random.randint(75, 95),
+            "air_quality": random.randint(85, 100)
+        },
+        "waste": {
+            "organic": random.randint(5, 15),
+            "recyclable": random.randint(3, 12),
+            "hazardous": random.randint(1, 5),
+            "recycling_efficiency": random.randint(70, 85),
+            "storage_capacity": 50
+        },
+        "emergency": {
+            "medical": random.randint(80, 100),
+            "rations": random.randint(70, 95),
+            "oxygen_backup": random.randint(85, 100),
+            "repair_kits": random.randint(2, 5),
+            "emergency_beacon": True
+        }
+    }
+
 # API endpoints
 @app.get("/")
 async def root():
@@ -443,6 +505,92 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
             return response.json()
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/resources")
+async def get_ship_resources(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get resource data for a specific ship"""
+    if not HAS_VALID_TOKEN:
+        # Return mock resource data
+        return generate_mock_resource_data(ship_symbol)
+    
+    try:
+        # In a real implementation, this would fetch from SpaceTraders API
+        # For now, return mock data since SpaceTraders doesn't have resource management
+        return generate_mock_resource_data(ship_symbol)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/resources/{action}")
+async def execute_resource_action(ship_symbol: str, action: str, parameters: dict = {}, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Execute a resource management action on a ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock the resource action
+        return {"status": "success", "message": f"Executed {action} on {ship_symbol}", "data": parameters}
+    
+    try:
+        # In a real implementation, this would interact with SpaceTraders API
+        # For now, simulate successful execution
+        
+        action_responses = {
+            "optimize-fuel": {"status": "success", "message": "Fuel optimization enabled", "efficiency_increase": 5},
+            "refuel": {"status": "success", "message": "Ship refueled", "fuel_added": 50},
+            "balance-power": {"status": "success", "message": f"Power balanced to {parameters.get('mode', 'normal')} mode"},
+            "activate-heat-sink": {"status": "success", "message": "Heat sinks activated", "temperature_reduction": 10},
+            "emergency-cooling": {"status": "success", "message": "Emergency cooling engaged", "temperature_reduction": 20},
+            "adjust-life-support": {"status": "success", "message": f"Life support adjusted to {parameters.get('level', 'standard')} level"},
+            "start-recycling": {"status": "success", "message": "Waste recycling started", "efficiency": 75},
+            "jettison-waste": {"status": "success", "message": "Waste jettisoned", "waste_removed": 10},
+            "deploy-emergency": {"status": "success", "message": "Emergency protocols deployed", "supplies_used": 1},
+            "resupply": {"status": "success", "message": "Resupply requested", "eta": "2 hours"}
+        }
+        
+        return action_responses.get(action, {"status": "unknown", "message": f"Unknown action: {action}"})
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/resource-efficiency")
+async def get_resource_efficiency(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get resource efficiency metrics for a ship"""
+    try:
+        import random
+        return {
+            "overall_efficiency": random.randint(80, 95),
+            "fuel_efficiency": random.randint(85, 98),
+            "power_efficiency": random.randint(75, 90),
+            "thermal_efficiency": random.randint(70, 85),
+            "life_support_efficiency": random.randint(85, 95),
+            "waste_management_efficiency": random.randint(70, 85),
+            "recommendations": [
+                "Consider optimizing power distribution for better efficiency",
+                "Heat levels are within optimal range",
+                "Waste recycling system performing well"
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/emergency-protocol")
+async def activate_emergency_protocol(ship_symbol: str, protocol_type: str = "standard", client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate emergency protocols for a ship"""
+    try:
+        protocols = {
+            "standard": "Standard emergency protocol activated",
+            "life_support": "Life support emergency protocol activated",
+            "hull_breach": "Hull breach emergency protocol activated",
+            "power_failure": "Power failure emergency protocol activated",
+            "fire": "Fire suppression emergency protocol activated"
+        }
+        
+        return {
+            "status": "success",
+            "message": protocols.get(protocol_type, "Emergency protocol activated"),
+            "protocol": protocol_type,
+            "emergency_supplies_used": True,
+            "crew_status": "safe"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
