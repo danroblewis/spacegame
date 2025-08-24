@@ -19,14 +19,7 @@ const Map = ({ selectedShip, onShipUpdate }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
 
-  useEffect(() => {
-    if (selectedShip) {
-      fetchSystemData();
-      fetchSecurityStatus();
-    }
-  }, [selectedShip]);
-
-  const fetchSystemData = async () => {
+  const fetchSystemData = useCallback(async () => {
     if (!selectedShip?.nav?.systemSymbol) return;
 
     try {
@@ -44,7 +37,20 @@ const Map = ({ selectedShip, onShipUpdate }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedShip?.nav?.systemSymbol]);
+
+  useEffect(() => {
+    if (selectedShip) {
+      fetchSystemData();
+    }
+  }, [selectedShip, fetchSystemData]);
+
+  useEffect(() => {
+    if (selectedShip) {
+      fetchSystemData();
+      fetchSecurityStatus();
+    }
+  }, [selectedShip, fetchSystemData]);
 
   const fetchSecurityStatus = async () => {
     if (!selectedShip) return;
@@ -72,7 +78,7 @@ const Map = ({ selectedShip, onShipUpdate }) => {
 
     try {
       setNavigating(true);
-      const response = await axios.post(`/api/ships/${selectedShip.symbol}/navigate`, {
+      await axios.post(`/api/ships/${selectedShip.symbol}/navigate`, {
         waypointSymbol: waypoint.symbol
       });
       

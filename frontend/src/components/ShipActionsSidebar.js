@@ -6,10 +6,66 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
   const [securityStatus, setSecurityStatus] = useState(null);
   const [loading, setLoading] = useState({});
   const [message, setMessage] = useState('');
+  const [combatState, setCombatState] = useState({
+    weaponsArmed: false,
+    shieldsActive: false,
+    targetLocked: false,
+    evasiveMode: false,
+    pointDefenseActive: false
+  });
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  const getWeapons = () => {
+    if (!selectedShip || !selectedShip.mounts) return [];
+    return selectedShip.mounts.filter(mount => 
+      mount.symbol && (
+        mount.symbol.includes('LASER_CANNON') ||
+        mount.symbol.includes('MISSILE_LAUNCHER') ||
+        mount.symbol.includes('TURRET')
+      )
+    );
+  };
+
+  const getShields = () => {
+    if (!selectedShip || !selectedShip.modules) return [];
+    return selectedShip.modules.filter(module => 
+      module.symbol && module.symbol.includes('SHIELD_GENERATOR')
+    );
+  };
+
+  const handleWeaponArm = () => {
+    setCombatState(prev => ({ ...prev, weaponsArmed: !prev.weaponsArmed }));
+  };
+
+  const handleShieldToggle = () => {
+    setCombatState(prev => ({ ...prev, shieldsActive: !prev.shieldsActive }));
+  };
+
+  const handleTargetAcquisition = () => {
+    setCombatState(prev => ({ ...prev, targetLocked: !prev.targetLocked }));
+  };
+
+  const handleEvasiveManeuvers = () => {
+    setCombatState(prev => ({ ...prev, evasiveMode: !prev.evasiveMode }));
+  };
+
+  const handlePointDefense = () => {
+    setCombatState(prev => ({ ...prev, pointDefenseActive: !prev.pointDefenseActive }));
+  };
+
+  const handleMissileLaunch = () => {
+    if (!combatState.weaponsArmed || !combatState.targetLocked) {
+      alert('Weapons must be armed and target must be locked before launching missiles');
+      return;
+    }
+    alert('Missile launched!');
+  };
+
+  const weapons = getWeapons();
+  const shields = getShields();
 
   const setLoadingState = (action, isLoading) => {
     setLoading(prev => ({ ...prev, [action]: isLoading }));
@@ -84,6 +140,12 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
 
   const handleGetRepairCost = () => executeShipAction('Get Repair Cost', 'repair', null, 'GET');
   const handleGetScrapValue = () => executeShipAction('Get Scrap Value', 'scrap', null, 'GET');
+
+  // Scanning functions
+  const handleSystemScan = () => executeShipAction('System Scan', 'scan/systems');
+  const handleWaypointScan = () => executeShipAction('Waypoint Scan', 'scan/waypoints');
+  const handleShipScan = () => executeShipAction('Ship Scan', 'scan/ships');
+  const handleSurvey = () => executeShipAction('Survey', 'survey');
 
   const handleTransfer = () => {
     const targetShip = prompt('Enter target ship symbol:');
@@ -441,6 +503,150 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
               </div>
 
               <div className="action-section">
+            <h4>🔍 Scanning & Intelligence</h4>
+            <div className="action-buttons">
+              <button 
+                onClick={handleSystemScan}
+                disabled={isButtonDisabled('System Scan')}
+                className="action-btn scan-btn systems"
+                title="Long-range sensors - Detect nearby systems and celestial objects"
+              >
+                {loading['System Scan'] ? '🔄' : '🌌'} Long-Range Sensors
+              </button>
+              
+              <button 
+                onClick={handleWaypointScan}
+                disabled={isButtonDisabled('Waypoint Scan')}
+                className="action-btn scan-btn waypoints"
+                title="Planetary survey - Scan waypoints for resources and composition"
+              >
+                {loading['Waypoint Scan'] ? '🔄' : '🪐'} Planetary Survey
+              </button>
+              
+              <button 
+                onClick={handleShipScan}
+                disabled={isButtonDisabled('Ship Scan')}
+                className="action-btn scan-btn ships"
+                title="Signal interception and threat assessment - Scan nearby ships"
+              >
+                {loading['Ship Scan'] ? '🔄' : '📡'} Ship Scanner
+              </button>
+              
+              <button 
+                onClick={handleSurvey}
+                disabled={isButtonDisabled('Survey')}
+                className="action-btn scan-btn survey"
+                title="Resource mapping - Create detailed survey of current waypoint"
+              >
+                {loading['Survey'] ? '🔄' : '⛏️'} Resource Survey
+              </button>
+            </div>
+          </div>
+
+          <div className="action-section">
+            <h4>📦 Cargo & Fleet</h4>
+            <div className="action-buttons">
+              <button 
+                onClick={handleTransfer}
+                disabled={isButtonDisabled('Transfer Cargo')}
+                className="action-btn transfer-btn"
+                title="Transfer cargo to another ship"
+              >
+                {loading['Transfer Cargo'] ? '🔄' : '📦'} Transfer Cargo
+              </button>
+            </div>
+          </div>
+
+          <div className="action-section">
+            <h4>⚔️ Combat & Defense</h4>
+            <div className="combat-section">
+              
+              {/* Weapon Systems */}
+              <div className="combat-subsection">
+                <h5>🔫 Weapon Systems</h5>
+                {weapons.length > 0 ? (
+                  <div className="weapon-list">
+                    {weapons.map((weapon, index) => (
+                      <div key={index} className="weapon-item">
+                        <span className="weapon-name">{weapon.name || weapon.symbol}</span>
+                        <span className={`weapon-status ${combatState.weaponsArmed ? 'armed' : 'disarmed'}`}>
+                          {combatState.weaponsArmed ? 'ARMED' : 'DISARMED'}
+                        </span>
+                      </div>
+                    ))}
+                    <button 
+                      className={`combat-btn ${combatState.weaponsArmed ? 'active' : ''}`}
+                      onClick={handleWeaponArm}
+                    >
+                      {combatState.weaponsArmed ? '🔴 Disarm Weapons' : '🟢 Arm Weapons'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="no-equipment">No weapons installed</div>
+                )}
+              </div>
+
+              {/* Shield Systems */}
+              <div className="combat-subsection">
+                <h5>🛡️ Shield Systems</h5>
+                {shields.length > 0 ? (
+                  <div className="shield-list">
+                    {shields.map((shield, index) => (
+                      <div key={index} className="shield-item">
+                        <span className="shield-name">{shield.name || shield.symbol}</span>
+                        <span className={`shield-status ${combatState.shieldsActive ? 'active' : 'inactive'}`}>
+                          {combatState.shieldsActive ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </div>
+                    ))}
+                    <button 
+                      className={`combat-btn ${combatState.shieldsActive ? 'active' : ''}`}
+                      onClick={handleShieldToggle}
+                    >
+                      {combatState.shieldsActive ? '⬇️ Lower Shields' : '⬆️ Raise Shields'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="no-equipment">No shield generators installed</div>
+                )}
+              </div>
+
+              {/* Combat Actions */}
+              <div className="combat-subsection">
+                <h5>🎯 Combat Actions</h5>
+                <div className="combat-actions">
+                  <button 
+                    className={`combat-btn ${combatState.targetLocked ? 'active' : ''}`}
+                    onClick={handleTargetAcquisition}
+                  >
+                    {combatState.targetLocked ? '🔒 Target Locked' : '🎯 Acquire Target'}
+                  </button>
+                  
+                  <button 
+                    className={`combat-btn ${combatState.evasiveMode ? 'active' : ''}`}
+                    onClick={handleEvasiveManeuvers}
+                  >
+                    {combatState.evasiveMode ? '➡️ Standard Flight' : '🔄 Evasive Maneuvers'}
+                  </button>
+                  
+                  <button 
+                    className={`combat-btn ${combatState.pointDefenseActive ? 'active' : ''}`}
+                    onClick={handlePointDefense}
+                  >
+                    {combatState.pointDefenseActive ? '🔴 Point Defense ON' : '⚪ Point Defense OFF'}
+                  </button>
+                  
+                  <button 
+                    className="combat-btn missile-btn"
+                    onClick={handleMissileLaunch}
+                    disabled={!combatState.weaponsArmed || !combatState.targetLocked}
+                  >
+                    🚀 Launch Missiles
+                  </button>
+                </div>
+              </div>
+
+              <div className="action-section">
                 <h4>📦 Cargo & Fleet</h4>
                 <div className="action-buttons">
                   <button 
@@ -466,6 +672,60 @@ const ShipActionsSidebar = ({ selectedShip, onShipUpdate, onMessage }) => {
                     {loading.Scrap ? '🔄' : '💥'} Scrap Ship {getActionRequirement('scrap')}
                   </button>
                 </div>
+              </div>
+
+              {/* Combat Status */}
+              <div className="combat-status">
+                <h6>Status</h6>
+                <div className="status-indicators">
+                  <div className={`status-item ${combatState.weaponsArmed ? 'active' : ''}`}>
+                    ⚔️ Weapons {combatState.weaponsArmed ? 'Armed' : 'Disarmed'}
+                  </div>
+                  <div className={`status-item ${combatState.shieldsActive ? 'active' : ''}`}>
+                    🛡️ Shields {combatState.shieldsActive ? 'Up' : 'Down'}
+                  </div>
+                  <div className={`status-item ${combatState.targetLocked ? 'active' : ''}`}>
+                    🎯 Target {combatState.targetLocked ? 'Locked' : 'None'}
+                  </div>
+                  <div className={`status-item ${combatState.evasiveMode ? 'active' : ''}`}>
+                    🔄 {combatState.evasiveMode ? 'Evasive' : 'Standard'} Flight
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="action-section">
+            <h4>Refuel & Repair</h4>
+            <div className="action-buttons-placeholder">
+              <div className="placeholder-text">
+                Maintenance actions will appear here
+              </div>
+            </div>
+          </div>
+
+          <div className="action-section danger-section">
+            <h4>⚠️ Dangerous Operations</h4>
+            <div className="action-buttons">
+              <button 
+                onClick={handleGetScrapValue}
+                disabled={!canPerformAction('scrap') || isButtonDisabled('Get Scrap Value')}
+                className="action-btn info-btn"
+                title="Get scrap value estimate"
+              >
+                {loading['Get Scrap Value'] ? '🔄' : '💰'} Scrap Value
+              </button>
+              
+              <button 
+                onClick={handleScrap}
+                disabled={!canPerformAction('scrap') || isButtonDisabled('Scrap')}
+                className="action-btn danger-btn"
+                title={`Scrap ship for credits ${getActionRequirement('scrap')}`}
+              >
+                {loading.Scrap ? '🔄' : '💥'} Scrap Ship {getActionRequirement('scrap')}
+              </button>
+            </div>
+          </div>
               </div>
             </>
           )}

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 import httpx
 import os
 from dotenv import load_dotenv
@@ -41,6 +41,93 @@ class Agent(BaseModel):
     credits: int
     startingFaction: str
 
+# Ship modification models
+class ShipRequirements(BaseModel):
+    power: int
+    crew: int
+    slots: int
+
+class ShipComponent(BaseModel):
+    symbol: str
+    name: str
+    description: str
+    condition: float = 1.0
+    integrity: float = 1.0
+    requirements: ShipRequirements
+    quality: int = 1
+
+class ShipFrame(ShipComponent):
+    moduleSlots: int
+    mountingPoints: int
+    fuelCapacity: int
+
+class ShipReactor(ShipComponent):
+    powerOutput: int
+
+class ShipEngine(ShipComponent):
+    speed: int
+
+class ShipModule(BaseModel):
+    symbol: str
+    name: str
+    description: str
+    capacity: Optional[int] = None
+    range: Optional[int] = None
+    requirements: ShipRequirements
+
+class ShipMount(BaseModel):
+    symbol: str
+    name: str
+    description: str
+    strength: Optional[int] = None
+    deposits: Optional[List[str]] = None
+    requirements: ShipRequirements
+
+# Crew management models
+class CrewMember(BaseModel):
+    id: str
+    name: str
+    role: str  # PILOT, ENGINEER, GUNNER, MEDIC, SECURITY, MINER, etc.
+    level: int
+    experience: int
+    skills: dict  # {"piloting": 75, "engineering": 60, "combat": 45}
+    health: int  # 0-100
+    morale: int  # 0-100
+    salary: int  # Credits per day
+    hired_date: str
+    status: str  # ACTIVE, INJURED, RESTING, TRAINING
+
+class CrewQuarters(BaseModel):
+    capacity: int
+    comfort_level: int  # 1-5, affects morale
+    facilities: List[str]  # ["recreation_room", "private_cabins", "gym"]
+    maintenance_cost: int  # Credits per day
+
+class MedicalBay(BaseModel):
+    level: int  # 1-5, affects treatment effectiveness
+    capacity: int  # Number of patients that can be treated simultaneously
+    equipment: List[str]  # ["basic_med_kit", "surgery_suite", "bio_scanner"]
+    treatment_cost: int  # Credits per treatment
+
+class CrewTrainingFacility(BaseModel):
+    level: int  # 1-5, affects training effectiveness
+    programs: List[str]  # ["pilot_training", "engineering_course", "combat_drill"]
+    training_cost: int  # Credits per training session
+
+class HireCrewRequest(BaseModel):
+    role: str
+    max_salary: int
+
+class TrainCrewRequest(BaseModel):
+    skill: str
+    duration_hours: int
+
+class AssignRoleRequest(BaseModel):
+    new_role: str
+
+class TreatCrewRequest(BaseModel):
+    crew_ids: List[str]
+
 class Ship(BaseModel):
     symbol: str
     registration: dict
@@ -52,6 +139,23 @@ class Ship(BaseModel):
     modules: List[dict]
     mounts: List[dict]
     cargo: dict
+
+class EquipmentItem(BaseModel):
+    component: Union[ShipModule, ShipMount, ShipReactor, ShipEngine, ShipFrame]
+    price: int
+    available: bool = True
+
+class ModificationRequest(BaseModel):
+    shipSymbol: str
+    componentType: str  # "module", "mount", "reactor", "engine", "frame"
+    componentSymbol: str
+    action: str  # "install", "remove", "upgrade"
+
+class CustomizationRequest(BaseModel):
+    shipSymbol: str
+    name: Optional[str] = None
+    color: Optional[str] = None
+    decal: Optional[str] = None
 
 class System(BaseModel):
     symbol: str
@@ -75,6 +179,11 @@ class Waypoint(BaseModel):
 
 class NavigateRequest(BaseModel):
     waypointSymbol: str
+
+class CombatActionRequest(BaseModel):
+    action: str
+    target: Optional[str] = None
+    params: Optional[dict] = None
 
 class RefuelRequest(BaseModel):
     units: Optional[int] = None
@@ -108,6 +217,17 @@ class SecurityStatus(BaseModel):
 
 # Global security status storage (in production, this would be in a database)
 ship_security_status = {}
+
+# Scanning & Intelligence Models
+class ScanResult(BaseModel):
+    shipSymbol: str
+    scanType: str
+    timestamp: str
+    data: dict
+    cooldown: Optional[dict] = None
+
+class SurveyRequest(BaseModel):
+    shipSymbol: str
 
 # Mock data for testing
 MOCK_AVAILABLE_CREW = [
@@ -179,11 +299,17 @@ MOCK_SHIPS = [
             }
         },
         "crew": {"current": 2, "capacity": 4},
-        "frame": {"name": "Explorer Frame"},
-        "reactor": {"name": "Basic Reactor"},
-        "engine": {"name": "Basic Engine"},
-        "modules": [{"name": "Basic Module"}],
-        "mounts": [{"name": "Basic Mount"}],
+        "frame": {"name": "Explorer Frame", "symbol": "FRAME_EXPLORER"},
+        "reactor": {"name": "Basic Reactor", "symbol": "REACTOR_FUSION_I", "powerOutput": 15},
+        "engine": {"name": "Basic Engine", "symbol": "ENGINE_ION_DRIVE_I", "speed": 25},
+        "modules": [
+            {"name": "Shield Generator I", "symbol": "MODULE_SHIELD_GENERATOR_I", "description": "Basic shield generator"},
+            {"name": "Cargo Hold I", "symbol": "MODULE_CARGO_HOLD_I", "description": "Basic cargo storage"}
+        ],
+        "mounts": [
+            {"name": "Laser Cannon I", "symbol": "MOUNT_LASER_CANNON_I", "description": "Basic laser cannon"},
+            {"name": "Missile Launcher I", "symbol": "MOUNT_MISSILE_LAUNCHER_I", "description": "Basic missile launcher"}
+        ],
         "cargo": {"units": 50, "capacity": 100, "inventory": [{"symbol": "FUEL", "units": 50}]}
     }
 ]
@@ -281,6 +407,341 @@ MOCK_FACTIONS = [
     }
 ]
 
+# Mock equipment data for ship modifications
+MOCK_EQUIPMENT = {
+    "modules": [
+        {
+            "symbol": "MODULE_CARGO_HOLD_I",
+            "name": "Cargo Hold I",
+            "description": "Expand your ship's cargo capacity",
+            "capacity": 30,
+            "requirements": {"power": 1, "crew": 0, "slots": 1},
+            "price": 5000
+        },
+        {
+            "symbol": "MODULE_CARGO_HOLD_II", 
+            "name": "Cargo Hold II",
+            "description": "Advanced cargo storage system",
+            "capacity": 50,
+            "requirements": {"power": 2, "crew": 0, "slots": 2},
+            "price": 12000
+        },
+        {
+            "symbol": "MODULE_MINERAL_PROCESSOR_I",
+            "name": "Mineral Processor I",
+            "description": "Process raw minerals into refined goods",
+            "requirements": {"power": 3, "crew": 1, "slots": 2},
+            "price": 15000
+        },
+        {
+            "symbol": "MODULE_FUEL_REFINERY_I",
+            "name": "Fuel Refinery I", 
+            "description": "Refine fuel from raw materials",
+            "requirements": {"power": 4, "crew": 2, "slots": 3},
+            "price": 25000
+        },
+        {
+            "symbol": "MODULE_JUMP_DRIVE_I",
+            "name": "Jump Drive I",
+            "description": "Enable instant travel between systems",
+            "range": 2000,
+            "requirements": {"power": 8, "crew": 1, "slots": 4},
+            "price": 50000
+        },
+        {
+            "symbol": "MODULE_SHIELD_GENERATOR_I",
+            "name": "Shield Generator I",
+            "description": "Basic shield protection",
+            "requirements": {"power": 5, "crew": 0, "slots": 2},
+            "price": 18000
+        }
+    ],
+    "mounts": [
+        {
+            "symbol": "MOUNT_MINING_LASER_I",
+            "name": "Mining Laser I",
+            "description": "Basic mining laser for extracting resources",
+            "strength": 10,
+            "deposits": ["IRON", "COPPER", "ALUMINUM"],
+            "requirements": {"power": 2, "crew": 0, "slots": 1},
+            "price": 8000
+        },
+        {
+            "symbol": "MOUNT_MINING_LASER_II", 
+            "name": "Mining Laser II",
+            "description": "Advanced mining laser with higher yield",
+            "strength": 25,
+            "deposits": ["IRON", "COPPER", "ALUMINUM", "GOLD", "PLATINUM"],
+            "requirements": {"power": 4, "crew": 0, "slots": 2},
+            "price": 20000
+        },
+        {
+            "symbol": "MOUNT_SURVEYOR_I",
+            "name": "Surveyor I",
+            "description": "Survey waypoints for valuable resources",
+            "strength": 5,
+            "requirements": {"power": 2, "crew": 1, "slots": 1},
+            "price": 10000
+        },
+        {
+            "symbol": "MOUNT_SENSOR_ARRAY_I",
+            "name": "Sensor Array I", 
+            "description": "Advanced sensors for detecting ships and hazards",
+            "requirements": {"power": 3, "crew": 0, "slots": 1},
+            "price": 12000
+        },
+        {
+            "symbol": "MOUNT_GAS_SIPHON_I",
+            "name": "Gas Siphon I",
+            "description": "Extract gases from gas giants",
+            "strength": 8,
+            "deposits": ["HYDROCARBON"],
+            "requirements": {"power": 3, "crew": 1, "slots": 2},
+            "price": 15000
+        },
+        {
+            "symbol": "MOUNT_LASER_CANNON_I",
+            "name": "Laser Cannon I",
+            "description": "Basic weapon system for ship defense",
+            "strength": 15,
+            "requirements": {"power": 5, "crew": 0, "slots": 1},
+            "price": 22000
+        }
+    ],
+    "reactors": [
+        {
+            "symbol": "REACTOR_FUSION_I",
+            "name": "Fusion Reactor I",
+            "description": "Advanced fusion reactor with higher power output",
+            "powerOutput": 15,
+            "requirements": {"power": 0, "crew": 2, "slots": 0},
+            "price": 35000
+        },
+        {
+            "symbol": "REACTOR_ANTIMATTER_I",
+            "name": "Antimatter Reactor I", 
+            "description": "Cutting-edge antimatter reactor",
+            "powerOutput": 25,
+            "requirements": {"power": 0, "crew": 3, "slots": 0},
+            "price": 75000
+        }
+    ],
+    "engines": [
+        {
+            "symbol": "ENGINE_ION_DRIVE_I",
+            "name": "Ion Drive I",
+            "description": "Efficient ion propulsion system",
+            "speed": 25,
+            "requirements": {"power": 4, "crew": 0, "slots": 0},
+            "price": 28000
+        },
+        {
+            "symbol": "ENGINE_HYPER_DRIVE_I", 
+            "name": "Hyper Drive I",
+            "description": "Ultra-fast hyperdrive engine",
+            "speed": 40,
+            "requirements": {"power": 8, "crew": 1, "slots": 0},
+            "price": 60000
+        }
+    ]
+}
+
+# Resource Management Models
+class ResourceData(BaseModel):
+    fuel: dict
+    power: dict
+    heat: dict
+    life_support: dict
+    waste: dict
+    emergency: dict
+
+class ResourceAction(BaseModel):
+    action: str
+    parameters: dict = {}
+
+# Mock resource data generator
+def generate_mock_resource_data(ship_symbol: str):
+    import random
+    return {
+        "fuel": {
+            "current": random.randint(50, 100),
+            "capacity": 100,
+            "consumption_rate": random.uniform(0.5, 2.0),
+            "efficiency": random.uniform(0.8, 1.0),
+            "status": random.choice(["optimal", "good", "poor"])
+        },
+        "power": {
+            "current": random.randint(70, 100),
+            "capacity": 100,
+            "reactor_output": random.randint(80, 120),
+            "consumption": random.randint(60, 90),
+            "efficiency": random.uniform(0.85, 0.98),
+            "status": random.choice(["optimal", "good", "degraded"])
+        },
+        "heat": {
+            "current": random.randint(20, 80),
+            "critical": 90,
+            "cooling_rate": random.uniform(2.0, 5.0),
+            "sources": {
+                "reactor": random.randint(10, 30),
+                "engines": random.randint(5, 20),
+                "weapons": random.randint(0, 15)
+            },
+            "status": random.choice(["normal", "elevated", "high"])
+        },
+        "life_support": {
+            "oxygen": random.randint(85, 100),
+            "co2_scrubber": random.randint(90, 100),
+            "air_recycling": random.uniform(0.9, 1.0),
+            "crew_capacity": random.randint(2, 8),
+            "current_crew": random.randint(1, 4),
+            "status": random.choice(["optimal", "stable", "concerning"])
+        },
+        "waste": {
+            "solid_waste": random.randint(10, 80),
+            "liquid_waste": random.randint(15, 70),
+            "processing_rate": random.uniform(0.8, 1.2),
+            "storage_capacity": 100,
+            "recycling_efficiency": random.uniform(0.7, 0.95),
+            "status": random.choice(["manageable", "high", "critical"])
+        },
+        "emergency": {
+            "backup_power": random.randint(50, 100),
+            "emergency_oxygen": random.randint(80, 100),
+            "fire_suppression": random.randint(90, 100),
+            "escape_pods": random.randint(2, 4),
+            "hull_integrity": random.uniform(0.85, 1.0),
+            "status": random.choice(["ready", "partial", "compromised"])
+        }
+    }
+
+# Equipment data structure
+MOCK_EQUIPMENT = {
+    "modules": [
+        {
+            "symbol": "MODULE_CARGO_HOLD_I",
+            "name": "Cargo Hold I",
+            "description": "Expand your ship's cargo capacity",
+            "capacity": 30,
+            "requirements": {"power": 1, "crew": 0, "slots": 1},
+            "price": 5000
+        },
+        {
+            "symbol": "MODULE_CARGO_HOLD_II", 
+            "name": "Cargo Hold II",
+            "description": "Advanced cargo storage system",
+            "capacity": 50,
+            "requirements": {"power": 2, "crew": 0, "slots": 2},
+            "price": 12000
+        },
+        {
+            "symbol": "MODULE_MINERAL_PROCESSOR_I",
+            "name": "Mineral Processor I",
+            "description": "Process raw minerals into refined goods",
+            "requirements": {"power": 3, "crew": 1, "slots": 2},
+            "price": 15000
+        },
+        {
+            "symbol": "MODULE_FUEL_REFINERY_I",
+            "name": "Fuel Refinery I", 
+            "description": "Refine fuel from raw materials",
+            "requirements": {"power": 4, "crew": 2, "slots": 3},
+            "price": 25000
+        },
+        {
+            "symbol": "MODULE_JUMP_DRIVE_I",
+            "name": "Jump Drive I",
+            "description": "Enable instant travel between systems",
+            "range": 2000,
+            "requirements": {"power": 8, "crew": 1, "slots": 4},
+            "price": 50000
+        },
+        {
+            "symbol": "MODULE_SHIELD_GENERATOR_I",
+            "name": "Shield Generator I",
+            "description": "Basic shield protection",
+            "requirements": {"power": 5, "crew": 0, "slots": 2},
+            "price": 18000
+        }
+    ],
+    "mounts": [
+        {
+            "symbol": "MOUNT_MINING_LASER_I",
+            "name": "Mining Laser I",
+            "description": "Basic mining laser for extracting resources",
+            "strength": 10,
+            "deposits": ["IRON", "COPPER", "ALUMINUM"],
+            "requirements": {"power": 2, "crew": 0, "slots": 1},
+            "price": 8000
+        },
+        {
+            "symbol": "MOUNT_MINING_LASER_II", 
+            "name": "Mining Laser II",
+            "description": "Advanced mining laser with higher yield",
+            "strength": 25,
+            "deposits": ["IRON", "COPPER", "ALUMINUM", "GOLD", "PLATINUM"],
+            "requirements": {"power": 4, "crew": 0, "slots": 2},
+            "price": 20000
+        },
+        {
+            "symbol": "MOUNT_SURVEYOR_I",
+            "name": "Surveyor I",
+            "description": "Survey waypoints for valuable resources",
+            "strength": 5,
+            "requirements": {"power": 2, "crew": 1, "slots": 1},
+            "price": 10000
+        },
+        {
+            "symbol": "MOUNT_SENSOR_ARRAY_I",
+            "name": "Sensor Array I", 
+            "description": "Advanced sensors for detecting ships and hazards",
+            "requirements": {"power": 3, "crew": 0, "slots": 1},
+            "price": 12000
+        },
+        {
+            "symbol": "MOUNT_GAS_SIPHON_I",
+            "name": "Gas Siphon I",
+            "description": "Extract gases from gas giants",
+            "strength": 8,
+            "deposits": ["HYDROCARBON"],
+            "requirements": {"power": 3, "crew": 1, "slots": 2},
+            "price": 15000
+        },
+        {
+            "symbol": "MOUNT_LASER_CANNON_I",
+            "name": "Laser Cannon I",
+            "description": "Basic weapon system for ship defense",
+            "strength": 15,
+            "requirements": {"power": 5, "crew": 0, "slots": 1},
+            "price": 22000
+        }
+    ],
+    "reactors": [
+        {
+            "symbol": "REACTOR_FUSION_I",
+            "name": "Fusion Reactor I",
+            "description": "Advanced fusion reactor with higher power output",
+            "powerOutput": 15,
+            "requirements": {"power": 0, "crew": 2, "slots": 0},
+            "price": 35000
+        },
+        {
+            "symbol": "REACTOR_ANTIMATTER_I",
+            "name": "Antimatter Reactor I", 
+            "description": "Cutting-edge antimatter reactor",
+            "powerOutput": 25,
+            "requirements": {"power": 0, "crew": 3, "slots": 0},
+            "price": 75000
+        }
+    ],
+    "engines": [
+        {
+            "symbol": "ENGINE_ION_DRIVE_I",
+            "name": "Ion Drive I",
+            "description": "Efficient ion propulsion system",
+            "speed": 25,
+            "requirements": {"power": 4, "crew": 0, "slots": 0},
+            "price": 28000
 # Resource Management Models
 class ResourceData(BaseModel):
     fuel: dict
@@ -342,6 +803,101 @@ def generate_mock_resource_data(ship_symbol: str):
             "emergency_beacon": True
         }
     }
+
+# Mock scanning data
+MOCK_SCAN_RESULTS = {
+    "systems": [
+        {
+            "symbol": "X1-DF56",
+            "sectorSymbol": "X1",
+            "type": "RED_STAR",
+            "x": 100,
+            "y": -50,
+            "distance": 150.2
+        },
+        {
+            "symbol": "X1-DF57", 
+            "sectorSymbol": "X1",
+            "type": "NEUTRON_STAR",
+            "x": -75,
+            "y": 120,
+            "distance": 95.8
+        }
+    ],
+    "waypoints": [
+        {
+            "symbol": "X1-DF55-20250C",
+            "type": "PLANET",
+            "systemSymbol": "X1-DF55",
+            "x": 45,
+            "y": -80,
+            "traits": [
+                {"symbol": "VOLCANIC", "name": "Volcanic", "description": "Volcanic activity detected"},
+                {"symbol": "RARE_METAL_DEPOSITS", "name": "Rare Metal Deposits", "description": "Contains valuable minerals"}
+            ]
+        },
+        {
+            "symbol": "X1-DF55-20250D",
+            "type": "ASTEROID_FIELD",
+            "systemSymbol": "X1-DF55", 
+            "x": -120,
+            "y": 60,
+            "traits": [
+                {"symbol": "COMMON_METAL_DEPOSITS", "name": "Common Metal Deposits", "description": "Standard mining resources"},
+                {"symbol": "PRECIOUS_METAL_DEPOSITS", "name": "Precious Metal Deposits", "description": "Valuable precious metals detected"}
+            ]
+        }
+    ],
+    "ships": [
+        {
+            "symbol": "MERCHANT_VESSEL_001",
+            "registration": {"factionSymbol": "COSMIC", "role": "TRADER"},
+            "nav": {"waypointSymbol": "X1-DF55-20250Y", "status": "IN_ORBIT"},
+            "frame": {"symbol": "FRAME_LIGHT_FREIGHTER"},
+            "cargo": {"units": 75, "capacity": 100},
+            "threat_level": "LOW",
+            "distance": 25.5
+        },
+        {
+            "symbol": "PATROL_SHIP_ALPHA",
+            "registration": {"factionSymbol": "GALACTIC_EMPIRE", "role": "PATROL"}, 
+            "nav": {"waypointSymbol": "X1-DF55-20250Z", "status": "IN_TRANSIT"},
+            "frame": {"symbol": "FRAME_INTERCEPTOR"},
+            "cargo": {"units": 10, "capacity": 20},
+            "threat_level": "MEDIUM",
+            "distance": 45.2
+        }
+    ]
+}
+
+# Available ship customizations
+SHIP_COLORS = ["red", "blue", "green", "gold", "silver", "black", "white", "purple"]
+SHIP_DECALS = ["flames", "stars", "stripes", "dragon", "eagle", "skull", "lightning", "geometric"]
+
+# Mock survey data for intelligence/scanning features
+MOCK_SURVEYS = [
+    {
+        "signature": "survey_001",
+        "symbol": "X1-DF55-20250Y",
+        "deposits": [
+            {"symbol": "IRON_ORE", "name": "Iron Ore"},
+            {"symbol": "COPPER_ORE", "name": "Copper Ore"},
+            {"symbol": "ALUMINUM_ORE", "name": "Aluminum Ore"}
+        ],
+        "expiration": "2023-11-01T01:00:00.000Z",
+        "size": "LARGE"
+    },
+    {
+        "signature": "survey_002", 
+        "symbol": "X1-DF55-20250B",
+        "deposits": [
+            {"symbol": "PRECIOUS_STONES", "name": "Precious Stones"},
+            {"symbol": "RARE_EARTH_ELEMENTS", "name": "Rare Earth Elements"}
+        ],
+        "expiration": "2023-11-01T02:00:00.000Z",
+        "size": "SMALL"
+    }
+]
 
 # API endpoints
 @app.get("/")
@@ -575,6 +1131,439 @@ async def orbit_ship(ship_symbol: str, client: httpx.AsyncClient = Depends(get_h
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/ships/{ship_symbol}/combat/weapons")
+async def manage_weapons(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Arm or disarm ship weapons"""
+    if not HAS_VALID_TOKEN:
+        # Mock weapon management response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "action": request.action,
+                "message": f"Weapons {request.action}ed successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "action": request.action,
+            "message": f"Weapons {request.action}ed successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/shields")
+async def manage_shields(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate or deactivate ship shields"""
+    if not HAS_VALID_TOKEN:
+        # Mock shield management response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "action": request.action,
+                "message": f"Shields {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "action": request.action,
+            "message": f"Shields {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/target")
+async def target_acquisition(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Acquire or release target lock"""
+    if not HAS_VALID_TOKEN:
+        # Mock targeting response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "target": request.target,
+                "locked": request.action == "acquire",
+                "message": f"Target {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "target": request.target,
+            "locked": request.action == "acquire",
+            "message": f"Target {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/evasive")
+async def evasive_maneuvers(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Engage or disengage evasive maneuvers"""
+    if not HAS_VALID_TOKEN:
+        # Mock evasive maneuvers response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "evasive_mode": request.action == "engage",
+                "message": f"Evasive maneuvers {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "evasive_mode": request.action == "engage",
+            "message": f"Evasive maneuvers {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/point-defense")
+async def point_defense_system(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Activate or deactivate point defense systems"""
+    if not HAS_VALID_TOKEN:
+        # Mock point defense response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "point_defense_active": request.action == "activate",
+                "message": f"Point defense system {request.action}d successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "point_defense_active": request.action == "activate",
+            "message": f"Point defense system {request.action}d successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/combat/missiles")
+async def launch_missiles(ship_symbol: str, request: CombatActionRequest, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Launch guided missiles at target"""
+    if not HAS_VALID_TOKEN:
+        # Mock missile launch response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "target": request.target,
+                "missiles_launched": request.params.get("count", 1) if request.params else 1,
+                "message": "Missiles launched successfully",
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "target": request.target,
+            "missiles_launched": request.params.get("count", 1) if request.params else 1,
+            "message": "Missiles launched successfully",
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+@app.get("/api/ships/{ship_symbol}/combat/status")
+async def get_combat_status(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get current combat status of ship"""
+    if not HAS_VALID_TOKEN:
+        # Mock combat status response
+        mock_ship = next((ship for ship in MOCK_SHIPS if ship["symbol"] == ship_symbol), None)
+        if not mock_ship:
+            raise HTTPException(status_code=404, detail="Ship not found")
+        
+        return {
+            "data": {
+                "ship": mock_ship,
+                "combat_status": {
+                    "weapons_armed": False,
+                    "shields_active": False,
+                    "target_locked": False,
+                    "evasive_mode": False,
+                    "point_defense_active": False,
+                    "available_weapons": len([m for m in mock_ship["mounts"] if "WEAPON" in m.get("symbol", "") or "CANNON" in m.get("symbol", "") or "LAUNCHER" in m.get("symbol", "") or "TURRET" in m.get("symbol", "")]),
+                    "available_shields": len([m for m in mock_ship["modules"] if "SHIELD" in m.get("symbol", "")])
+                },
+                "timestamp": "2023-11-01T00:00:00.000Z"
+            }
+        }
+    
+    # In a real implementation, this would interact with the SpaceTraders API
+    return {
+        "data": {
+            "combat_status": {
+                "weapons_armed": False,
+                "shields_active": False,
+                "target_locked": False,
+                "evasive_mode": False,
+                "point_defense_active": False
+            },
+            "timestamp": "2023-11-01T00:00:00.000Z"
+        }
+    }
+
+# Ship modification endpoints
+@app.get("/api/equipment")
+async def get_equipment():
+    """Get available equipment for ship modifications"""
+    return {"data": MOCK_EQUIPMENT}
+
+@app.get("/api/equipment/{component_type}")
+async def get_equipment_by_type(component_type: str):
+    """Get equipment by type (modules, mounts, reactors, engines)"""
+    if component_type not in MOCK_EQUIPMENT:
+        raise HTTPException(status_code=404, detail="Component type not found")
+    return {"data": MOCK_EQUIPMENT[component_type]}
+
+@app.post("/api/ships/{ship_symbol}/install")
+async def install_component(ship_symbol: str, request: ModificationRequest):
+    """Install a module or mount on a ship"""
+    # Find the ship
+    ship = next((s for s in MOCK_SHIPS if s["symbol"] == ship_symbol), None)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    # Find the component in equipment
+    component_data = None
+    if request.componentType in MOCK_EQUIPMENT:
+        component_data = next((c for c in MOCK_EQUIPMENT[request.componentType] if c["symbol"] == request.componentSymbol), None)
+    
+    if not component_data:
+        raise HTTPException(status_code=404, detail="Component not found")
+    
+    # Check if agent has enough credits
+    if MOCK_AGENT["credits"] < component_data["price"]:
+        raise HTTPException(status_code=400, detail="Insufficient credits")
+    
+    # Install the component
+    if request.componentType == "modules":
+        ship["modules"].append({
+            "symbol": component_data["symbol"],
+            "name": component_data["name"],
+            "description": component_data["description"],
+            "capacity": component_data.get("capacity"),
+            "range": component_data.get("range"),
+            "requirements": component_data["requirements"]
+        })
+    elif request.componentType == "mounts":
+        ship["mounts"].append({
+            "symbol": component_data["symbol"],
+            "name": component_data["name"],
+            "description": component_data["description"],
+            "strength": component_data.get("strength"),
+            "deposits": component_data.get("deposits"),
+            "requirements": component_data["requirements"]
+        })
+    elif request.componentType == "reactors":
+        ship["reactor"] = {
+            "symbol": component_data["symbol"],
+            "name": component_data["name"],
+            "description": component_data["description"],
+            "powerOutput": component_data["powerOutput"],
+            "requirements": component_data["requirements"]
+        }
+    elif request.componentType == "engines":
+        ship["engine"] = {
+            "symbol": component_data["symbol"],
+            "name": component_data["name"],
+            "description": component_data["description"],
+            "speed": component_data["speed"],
+            "requirements": component_data["requirements"]
+        }
+    
+    # Deduct credits
+    MOCK_AGENT["credits"] -= component_data["price"]
+    
+    return {
+        "data": {
+            "ship": ship,
+            "transaction": {
+                "component": component_data,
+                "price": component_data["price"],
+                "creditsRemaining": MOCK_AGENT["credits"]
+            }
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/remove")
+async def remove_component(ship_symbol: str, request: ModificationRequest):
+    """Remove a module or mount from a ship"""
+    ship = next((s for s in MOCK_SHIPS if s["symbol"] == ship_symbol), None)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    removed_component = None
+    refund_amount = 0
+    
+    if request.componentType == "modules":
+        for i, module in enumerate(ship["modules"]):
+            if module.get("symbol") == request.componentSymbol:
+                removed_component = ship["modules"].pop(i)
+                break
+    elif request.componentType == "mounts":
+        for i, mount in enumerate(ship["mounts"]):
+            if mount.get("symbol") == request.componentSymbol:
+                removed_component = ship["mounts"].pop(i)
+                break
+    
+    if not removed_component:
+        raise HTTPException(status_code=404, detail="Component not found on ship")
+    
+    # Calculate refund (50% of original price)
+    component_data = None
+    if request.componentType in MOCK_EQUIPMENT:
+        component_data = next((c for c in MOCK_EQUIPMENT[request.componentType] if c["symbol"] == request.componentSymbol), None)
+    
+    if component_data:
+        refund_amount = component_data["price"] // 2
+        MOCK_AGENT["credits"] += refund_amount
+    
+    return {
+        "data": {
+            "ship": ship,
+            "transaction": {
+                "removedComponent": removed_component,
+                "refund": refund_amount,
+                "creditsRemaining": MOCK_AGENT["credits"]
+            }
+        }
+    }
+
+@app.post("/api/ships/{ship_symbol}/customize")
+async def customize_ship(ship_symbol: str, request: CustomizationRequest):
+    """Customize ship appearance (name, color, decals)"""
+    ship = next((s for s in MOCK_SHIPS if s["symbol"] == ship_symbol), None)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    customization_cost = 1000  # Base cost for customization
+    total_cost = 0
+    
+    if request.name:
+        ship["registration"]["name"] = request.name
+        total_cost += customization_cost
+    
+    if request.color:
+        if request.color not in SHIP_COLORS:
+            raise HTTPException(status_code=400, detail="Invalid color")
+        if "customization" not in ship:
+            ship["customization"] = {}
+        ship["customization"]["color"] = request.color
+        total_cost += customization_cost
+    
+    if request.decal:
+        if request.decal not in SHIP_DECALS:
+            raise HTTPException(status_code=400, detail="Invalid decal")
+        if "customization" not in ship:
+            ship["customization"] = {}
+        ship["customization"]["decal"] = request.decal
+        total_cost += customization_cost
+    
+    if MOCK_AGENT["credits"] < total_cost:
+        raise HTTPException(status_code=400, detail="Insufficient credits for customization")
+    
+    MOCK_AGENT["credits"] -= total_cost
+    
+    return {
+        "data": {
+            "ship": ship,
+            "transaction": {
+                "customizationCost": total_cost,
+                "creditsRemaining": MOCK_AGENT["credits"]
+            }
+        }
+    }
+
+@app.get("/api/ships/{ship_symbol}/modification-info")
+async def get_ship_modification_info(ship_symbol: str):
+    """Get ship modification capabilities and current status"""
+    ship = next((s for s in MOCK_SHIPS if s["symbol"] == ship_symbol), None)
+    if not ship:
+        raise HTTPException(status_code=404, detail="Ship not found")
+    
+    # Calculate current power usage
+    current_power_usage = 0
+    for module in ship.get("modules", []):
+        if "requirements" in module:
+            current_power_usage += module["requirements"].get("power", 0)
+    for mount in ship.get("mounts", []):
+        if "requirements" in mount:
+            current_power_usage += mount["requirements"].get("power", 0)
+    
+    reactor_power = ship.get("reactor", {}).get("powerOutput", 10)  # Default power
+    
+    # Mock frame data
+    frame_data = {
+        "moduleSlots": 8,
+        "mountingPoints": 4,
+        "usedModuleSlots": len(ship.get("modules", [])),
+        "usedMountingPoints": len(ship.get("mounts", []))
+    }
+    
+    return {
+        "data": {
+            "ship": ship,
+            "powerInfo": {
+                "reactorPower": reactor_power,
+                "currentUsage": current_power_usage,
+                "availablePower": reactor_power - current_power_usage
+            },
+            "slotInfo": frame_data,
+            "availableColors": SHIP_COLORS,
+            "availableDecals": SHIP_DECALS
+        }
+    }
+
+# Ship action endpoints (refuel, repair, transfer, scrap)
+class RefuelRequest(BaseModel):
+    units: Optional[int] = None  # If None, refuel to full capacity
+
+class RepairRequest(BaseModel):
+    pass  # No specific parameters needed for repair
+
+class TransferRequest(BaseModel):
+    tradeSymbol: str
+    units: int
+    shipSymbol: str  # Target ship symbol
+
+class ScrapRequest(BaseModel):
+    pass  # No specific parameters needed for scrap
+
+# Resource management endpoints
 @app.get("/api/ships/{ship_symbol}/resources")
 async def get_ship_resources(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
     """Get resource data for a specific ship"""
@@ -1187,6 +2176,154 @@ async def recharge_countermeasures(ship_symbol: str):
         "totalCharges": 3
     }
 
+# Scanning and Intelligence Endpoints
+
+@app.post("/api/ships/{ship_symbol}/scan/systems")
+async def scan_systems(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Long-range sensors - Detect systems and celestial objects"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 70,
+                    "remainingSeconds": 70,
+                    "expiration": "2023-11-01T00:01:10.000Z"
+                },
+                "systems": MOCK_SCAN_RESULTS["systems"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/systems", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/scan/waypoints")
+async def scan_waypoints(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Planetary survey - Scan waypoints for resources and composition"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 60,
+                    "remainingSeconds": 60,
+                    "expiration": "2023-11-01T00:01:00.000Z"
+                },
+                "waypoints": MOCK_SCAN_RESULTS["waypoints"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/waypoints", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/scan/ships")
+async def scan_ships(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Signal interception and threat assessment - Scan nearby ships"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 10,
+                    "remainingSeconds": 10,
+                    "expiration": "2023-11-01T00:00:10.000Z"
+                },
+                "ships": MOCK_SCAN_RESULTS["ships"]
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/scan/ships", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ships/{ship_symbol}/survey")
+async def create_survey(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Resource mapping - Create detailed survey of current waypoint"""
+    if not HAS_VALID_TOKEN:
+        # Mock response for demo
+        return {
+            "data": {
+                "cooldown": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 60,
+                    "remainingSeconds": 60,
+                    "expiration": "2023-11-01T00:01:00.000Z"
+                },
+                "surveys": MOCK_SURVEYS
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.post(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/survey", headers=headers)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ships/{ship_symbol}/cooldown")
+async def get_ship_cooldown(ship_symbol: str, client: httpx.AsyncClient = Depends(get_httpx_client)):
+    """Get current ship cooldown status"""
+    if not HAS_VALID_TOKEN:
+        # Mock response - no cooldown
+        return {
+            "data": {
+                "shipSymbol": ship_symbol,
+                "totalSeconds": 0,
+                "remainingSeconds": 0,
+                "expiration": None
+            }
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {SPACETRADERS_TOKEN}"}
+        response = await client.get(f"{SPACETRADERS_API_URL}/my/ships/{ship_symbol}/cooldown", headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            # No cooldown
+            return {
+                "data": {
+                    "shipSymbol": ship_symbol,
+                    "totalSeconds": 0,
+                    "remainingSeconds": 0,
+                    "expiration": None
+                }
+            }
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

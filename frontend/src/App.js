@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Fleet from './components/Fleet';
 import Systems from './components/Systems';
 import Factions from './components/Factions';
+import Intelligence from './components/Intelligence';
 import Crew from './components/Crew';
 import ResourceManagement from './components/ResourceManagement';
 import ShipActionsSidebar from './components/ShipActionsSidebar';
@@ -11,6 +12,10 @@ import './App.css';
 
 function App() {
   const [selectedShip, setSelectedShip] = useState(null);
+
+  const handleShipSelect = (ship) => {
+    setSelectedShip(ship);
+  };
 
   const handleShipUpdate = (updatedShip) => {
     // Update selected ship if it's the one that was updated
@@ -31,6 +36,7 @@ function App() {
               <li><Link to="/">Dashboard</Link></li>
               <li><Link to="/fleet">Fleet</Link></li>
               <li><Link to="/crew">Crew</Link></li>
+              <li><Link to="/intelligence">Intelligence</Link></li>
               <li><Link to="/resources">Resources</Link></li>
               <li><Link to="/systems">Systems</Link></li>
               <li><Link to="/factions">Factions</Link></li>
@@ -44,12 +50,13 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/fleet" element={
                 <Fleet 
-                  selectedShip={selectedShip} 
-                  onShipSelect={setSelectedShip}
+                  selectedShip={selectedShip}
+                  onShipSelect={handleShipSelect}
                   onShipUpdate={handleShipUpdate}
                 />
               } />
               <Route path="/crew" element={<Crew />} />
+              <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/resources" element={<ResourceManagement />} />
               <Route path="/systems" element={<Systems />} />
               <Route path="/factions" element={<Factions />} />

@@ -75,7 +75,7 @@ const Crew = () => {
   };
 
   const fireCrew = async (crewId) => {
-    if (!confirm('Are you sure you want to fire this crew member?')) return;
+    if (!window.confirm('Are you sure you want to fire this crew member?')) return;
     
     try {
       const response = await axios.delete(`/api/ships/${selectedShip.symbol}/crew/${crewId}`);
