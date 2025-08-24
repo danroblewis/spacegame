@@ -247,7 +247,7 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
               <div 
                 key={ship.symbol} 
                 className={`ship-card ${selectedShip?.symbol === ship.symbol ? 'selected' : ''}`}
-                onClick={() => handleShipClick(ship)}
+                onClick={() => handleShipSelect(ship)}
               >
                 <div className="ship-header">
                   <span className="ship-name">{ship.symbol}</span>
@@ -485,7 +485,7 @@ const Fleet = ({ selectedShip, onShipSelect, onShipUpdate }) => {
                   <div 
                     key={ship.symbol} 
                     className={`ship-card ${selectedShip?.symbol === ship.symbol ? 'selected' : ''}`}
-                    onClick={() => handleShipClick(ship)}
+                    onClick={() => handleShipSelect(ship)}
                   >
                     <div className="ship-header">
                       <span className="ship-name">{ship.symbol}</span>

@@ -18,12 +18,22 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --coverage --watchAll=false",
+    "test:syntax": "react-scripts test --testNamePattern='Syntax Tests' --watchAll=false",
+    "lint": "eslint src/**/*.{js,jsx} --max-warnings 0",
+    "lint:fix": "eslint src/**/*.{js,jsx} --fix",
+    "prebuild": "npm run test:syntax",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
+    ]
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios)/)"
     ]
   },
   "browserslist": {
